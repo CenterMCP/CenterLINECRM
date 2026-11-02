@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CenterLINECRM</title>
+<style>
+:root{font-family:system-ui,sans-serif;color-scheme:light dark}body{margin:0;padding:20px;background:Canvas;color:CanvasText}h1{font-size:21px;margin:0 0 6px}p{font-size:13px;opacity:.75}nav,.actions{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}button,input,textarea,select{font:inherit;padding:8px;border:1px solid #8886;border-radius:6px;background:Canvas;color:CanvasText}button{cursor:pointer}button:disabled{opacity:.4;cursor:wait}button.selected{background:#126b50;color:white}label{display:flex;flex-direction:column;gap:5px;font-size:13px}form{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;padding:16px;border:1px solid #8885;border-radius:10px}textarea{min-height:100px;font-family:monospace}.wide{grid-column:1/-1}.table{overflow:auto;max-height:420px;border:1px solid #8885;border-radius:8px}table{border-collapse:collapse;width:100%;font-size:13px}td,th{text-align:left;padding:9px;border-bottom:1px solid #8884;max-width:260px;overflow-wrap:anywhere}th{position:sticky;top:0;background:Canvas}#status{white-space:pre-wrap;font-size:13px;min-height:24px}.error{color:#c44343}.pager{display:flex;gap:10px;align-items:center;margin:12px 0}
+</style></head><body>
+<h1>CenterLINECRM</h1><p>Manage loyalty master data, customer accounts, and points through MCP.</p>
+<nav id="tabs"></nav><form id="editor"></form>
+<div class="actions"><button id="refresh">Refresh</button><button id="new">New record</button></div>
+<div id="status" role="status" aria-live="polite">Connecting to MCP host…</div><div class="table" id="table"></div>
+<div class="pager"><button id="prev">Previous</button><span id="page"></span><button id="next">Next</button></div>
+<script>
+const sections={
+ master:{label:'Master data',list:'list_master_records',save:'save_master_record',fields:{kind:'text',id:'text',name:'text',active:'checkbox',data:'json'},defaults:{kind:'tier',active:true,data:{}}},
+ privileges:{label:'Privileges',list:'list_privileges',save:'save_privilege',fields:{id:'text',name:'text',description:'text',cost:'number',stock:'number',active:'checkbox'},defaults:{active:true,cost:100,stock:10}},
+ customers:{label:'Customers',list:'list_customers',save:'update_customer',fields:{id:'text',name:'text',active:'checkbox'},defaults:{active:true}},
+ points:{label:'Point ledger',list:'list_point_ledger',save:'adjust_points',fields:{customer_id:'text',delta:'number',reason:'text',reference:'text'},defaults:{}},
+ redemptions:{label:'Redemptions',list:'list_redemptions',fields:{customer_id:'optional'},defaults:{}}
+};
+let section='master',page=1,seq=1,ready=false,initialResult=null,revision=0,listFilters={};const waiting=new Map(),$=id=>document.getElementById(id);
+function rpc(method,params){const id=seq++;return new Promise((resolve,reject)=>{const timer=setTimeout(()=>{waiting.delete(id);reject(Error('MCP host did not respond.'))},20000);waiting.set(id,{resolve,reject,timer});window.parent.postMessage({jsonrpc:'2.0',id,method,params},'*')})}
+async function call(name,args){const r=await rpc('tools/call',{name,arguments:args});if(r.isError)throw Error(r.content?.find(c=>c.type==='text')?.text||'Operation failed');return r.structuredContent||JSON.parse(r.content.find(c=>c.type==='text').text)}
+function node(tag,text){const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n}
+function status(text,error=false){$('status').textContent=text;$('status').className=error?'error':''}
+function form(values){const s=sections[section];$('editor').replaceChildren();for(const [key,type]of Object.entries(s.fields)){const label=node('label',key.replaceAll('_',' '));const input=node(type==='json'?'textarea':'input');input.name=key;input.id='field-'+key;input.type=type==='optional'?'text':type==='json'?'text':type;input.required=type!=='optional'&&type!=='checkbox';if(type==='checkbox')input.checked=!!values[key];else input.value=type==='json'?JSON.stringify(values[key]||{},null,2):values[key]??'';if(type==='number'){input.step='1';input.min=key==='delta'?'-1000000000':key==='cost'?'1':'0';input.max='1000000000'}if(type==='json')label.className='wide';label.append(input);$('editor').append(label)}if(s.save){const save=node('button',section==='points'?'Apply point adjustment':'Save');save.type='submit';$('editor').append(save)}}
+function args(){const out={};for(const [key,type] of Object.entries(sections[section].fields)){const i=$('field-'+key);out[key]=type==='checkbox'?i.checked:type==='number'?Number(i.value):type==='json'?JSON.parse(i.value):i.value}return out}
+function render(data){const rows=Array.isArray(data.data)?data.data:[];$('table').replaceChildren();if(!rows.length){$('table').append(node('p','No records on this page.'));}else{const table=node('table'),header=node('tr');for(const key of Object.keys(rows[0]))header.append(node('th',key));header.append(node('th',''));const head=node('thead');head.append(header);table.append(head);const body=node('tbody');for(const row of rows){const tr=node('tr');for(const value of Object.values(row))tr.append(node('td',typeof value==='object'?JSON.stringify(value):String(value)));const td=node('td');if(sections[section].save&&section!=='points'){const edit=node('button','Edit');edit.onclick=()=>form(row);td.append(edit)}tr.append(td);body.append(tr)}table.append(body);$('table').append(table)}$('page').textContent='Page '+page+' · up to 100 records';$('prev').disabled=page<=1;$('next').disabled=rows.length<100;status('Loaded '+rows.length+' records.')}
+async function load(){const currentRevision=++revision;if(!ready){status('Waiting for MCP host initialization.');return}try{const a={...listFilters,page};if(section==='points'){a.customer_id=$('field-customer_id').value;if(!a.customer_id){status('Enter a customer ID and click Refresh.');return}}if(section==='redemptions'&&$('field-customer_id').value)a.customer_id=$('field-customer_id').value;const result=await call(sections[section].list,a);if(currentRevision===revision)render(result)}catch(e){if(currentRevision===revision)status(e.message,true)}}
+function select(key,values={},autoLoad=true){revision++;section=key;page=1;listFilters=key==='master'&&values.kind?{kind:values.kind}:{};for(const b of $('tabs').children)b.classList.toggle('selected',b.dataset.key===key);form({...sections[key].defaults,...values});$('table').replaceChildren();$('prev').disabled=true;$('next').disabled=true;$('page').textContent='';$('new').hidden=!sections[key].save||key==='customers'||key==='points';if(autoLoad)load()}
+for(const [key,s]of Object.entries(sections)){const b=node('button',s.label);b.dataset.key=key;b.onclick=()=>select(key);$('tabs').append(b)}
+$('editor').onsubmit=async e=>{e.preventDefault();const button=e.submitter;button.disabled=true;try{const s=sections[section],a=args();await call(s.save,a);await load();status('Saved.')}catch(e){status(e.message,true)}finally{button.disabled=false}};
+$('refresh').onclick=()=>{page=1;load()};$('new').onclick=()=>form(sections[section].defaults);$('prev').onclick=()=>{page--;load()};$('next').onclick=()=>{page++;load()};
+window.addEventListener('message',event=>{if(event.source!==window.parent)return;const m=event.data;if(m?.jsonrpc!=='2.0')return;if(waiting.has(m.id)){const p=waiting.get(m.id);clearTimeout(p.timer);waiting.delete(m.id);m.error?p.reject(Error(m.error.message)):p.resolve(m.result);return}if(m.method==='ui/notifications/tool-result'&&m.params?.structuredContent){initialResult=m.params.structuredContent;if(ready)applyResult(initialResult)}});
+function applyResult(result){
+ if(!result||typeof result.tool!=='string')return false;
+ const a=result.arguments||{};
+ if(result.tool==='open_crm_admin'){select(Object.hasOwn(sections,a.section)?a.section:'master',a);return true}
+ const key=Object.keys(sections).find(key=>sections[key].list===result.tool||sections[key].save===result.tool);
+ if(!key)return false;
+ select(key,a,false);
+ if(Array.isArray(result.data)){page=result.page||1;render(result)}else{load()}
+ return true;
+}
+select('master',{},false);
+if(window.openai?.toolOutput)initialResult=window.openai.toolOutput;
+(async()=>{try{await rpc('ui/initialize',{protocolVersion:'2026-01-26',appCapabilities:{},appInfo:{name:'CenterLINECRM',version:'0.2.0'}});window.parent.postMessage({jsonrpc:'2.0',method:'ui/notifications/initialized',params:{}},'*');ready=true;if(!applyResult(initialResult))load()}catch(e){status(e.message+' Use the MCP tools directly if this client does not support MCP Apps.',true)}})();
+</script></body></html>
