@@ -4,14 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light">
-  <title>Join the club · CenterLINECRM</title>
+  <title>Join the club · {{.BusinessName}}</title>
   <link rel="stylesheet" href="./register.css">
   <script src="./register.js" defer></script>
 </head>
 <body>
   <div class="loyalty-app">
     <header class="app-header">
-      <a class="brand" href="./register" aria-label="Membership home"><span class="brand-mark" aria-hidden="true">C</span><span>CenterLINECRM<small>YOUR EVERYDAY REWARDS</small></span></a>
+      <a class="brand" href="./register" aria-label="Membership home">{{if .LogoURL}}<img class="brand-logo" src="{{.LogoURL}}" alt="{{.BusinessName}} logo">{{else}}<span class="brand-mark" aria-hidden="true">C</span>{{end}}<span class="brand-name">{{.BusinessName}}<small>YOUR EVERYDAY REWARDS</small></span></a>
       <span class="club-badge">MEMBER CLUB <span aria-hidden="true">✦</span></span>
     </header>
     <main>

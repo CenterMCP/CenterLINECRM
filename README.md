@@ -36,6 +36,7 @@ Ask the LLM to open the CRM admin UI, create a Gold tier, add a coffee privilege
 | Tool | Purpose |
 | --- | --- |
 | `open_crm_admin` | Open the admin editor |
+| `update_business_branding` | Set business name, logo, and primary color on the public member page |
 | `get_public_urls` | Get the public membership registration URL |
 | `save_master_record` | Create/update/archive arbitrary master records |
 | `list_master_records` | List master records, optionally by kind |
@@ -70,6 +71,14 @@ Reuse the reference only with the same delta and reason. Each adjustment is limi
 ## Public membership registration
 
 Open `http://localhost:8000/public/register` to register a customer by name and email. `/public` and `/public/` redirect to this page. The responsive public page is embedded in the Go binary and served by the same service as `/mcp`; no frontend build or separate hosting is required.
+
+Use `update_business_branding` to customize the business name, logo, and primary color on both the registration and member views:
+
+```json
+{"business_name":"My Coffee Club","logo_url":"https://example.com/logo.png","primary_color":"#2563eb"}
+```
+
+All three fields are required; each call replaces the branding. The name must contain 1–200 bytes after trimming, the logo must be an absolute HTTPS URL without credentials or a fragment (use `""` to remove it), and the color must use six-digit `#RRGGBB` notation. Settings persist in SQLite and appear on the next page load. The color updates buttons, the brand mark, and the membership points card, with a contrasting text color. Without saved settings, the page uses CenterLINECRM branding. The logo loads from its external host; the page sends no referrer.
 
 When asked for a public URL, MCP clients can call `get_public_urls` with `{}`. Set `CRM_BASE_URL` to the externally accessible service base, including any instance prefix, for example `https://centermcp.com/instance-123` or `https://members.example.com`. The tool appends `/public/register`; trailing slashes are removed. Use an HTTP or HTTPS URL without credentials, query strings, or fragments, and omit `/mcp` and `/public/register` from the base. With `CRM_BASE_URL` unset or blank, the result is `https://centermcp.com/<mcp-id>/public/register` with `is_template: true`; replace `<mcp-id>` before sharing. With a configured base, `is_template` is false. Invalid configuration returns a tool error.
 

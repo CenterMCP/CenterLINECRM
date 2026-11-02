@@ -15,20 +15,23 @@ const Version = "0.2.0"
 const ResourceURI = "ui://centerlinecrm/admin/v1.html"
 
 type input struct {
-	Kind        string          `json:"kind"`
-	ID          string          `json:"id"`
-	Name        string          `json:"name"`
-	Active      bool            `json:"active"`
-	Data        json.RawMessage `json:"data"`
-	Description string          `json:"description"`
-	Cost        int64           `json:"cost"`
-	Stock       int64           `json:"stock"`
-	CustomerID  string          `json:"customer_id"`
-	Delta       int64           `json:"delta"`
-	Reason      string          `json:"reason"`
-	Reference   string          `json:"reference"`
-	Page        int             `json:"page"`
-	Section     string          `json:"section"`
+	Kind         string          `json:"kind"`
+	ID           string          `json:"id"`
+	Name         string          `json:"name"`
+	Active       bool            `json:"active"`
+	Data         json.RawMessage `json:"data"`
+	Description  string          `json:"description"`
+	Cost         int64           `json:"cost"`
+	Stock        int64           `json:"stock"`
+	CustomerID   string          `json:"customer_id"`
+	Delta        int64           `json:"delta"`
+	Reason       string          `json:"reason"`
+	Reference    string          `json:"reference"`
+	Page         int             `json:"page"`
+	BusinessName string          `json:"business_name"`
+	LogoURL      string          `json:"logo_url"`
+	PrimaryColor string          `json:"primary_color"`
+	Section      string          `json:"section"`
 }
 
 func MCP(s *crm.Store) *server.MCPServer {
@@ -45,6 +48,7 @@ func MCP(s *crm.Store) *server.MCPServer {
 		required          []string
 	}
 	specs := []spec{
+		{"update_business_branding", "Set the business branding on the public registration and member CRM page. Supply business_name, an absolute HTTPS logo_url (empty to remove), and primary_color as #RRGGBB. All three fields are required. Changes appear on the next page load.", false, map[string]string{"business_name": "string", "logo_url": "string", "primary_color": "string"}, []string{"business_name", "logo_url", "primary_color"}},
 		{"open_crm_admin", "Open the CRM editor. Choose master, privileges, customers, points, or redemptions; supply customer_id for customer-specific history.", true, map[string]string{"section": "string", "customer_id": "string"}, nil},
 		{"save_master_record", "Create or update master data: tiers, branches, categories, program settings or other kinds. Use active=false to archive.", false, map[string]string{"kind": "string", "id": "string", "name": "string", "active": "boolean", "data": "object"}, []string{"kind", "id", "name", "active", "data"}},
 		{"list_master_records", "List all master data, optionally filtered by kind. Pages contain at most 100 records.", true, map[string]string{"kind": "string", "page": "integer"}, nil},
@@ -112,6 +116,8 @@ func MCP(s *crm.Store) *server.MCPServer {
 			offset := (in.Page - 1) * 100
 			var value any
 			switch name {
+			case "update_business_branding":
+				value, err = s.UpdateBusinessBranding(ctx, crm.BusinessBranding{BusinessName: in.BusinessName, LogoURL: in.LogoURL, PrimaryColor: in.PrimaryColor})
 			case "open_crm_admin":
 				value = map[string]any{"message": "Use the editor to manage master records and privileges. Archive records by setting active to false."}
 			case "save_master_record":
