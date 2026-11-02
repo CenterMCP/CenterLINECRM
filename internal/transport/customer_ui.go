@@ -21,21 +21,25 @@ func registerCustomerUI(mux *http.ServeMux, s *crm.Store) {
 		})
 	}
 	for path, asset := range map[string]struct{ contentType, body string }{
+		"/public/coupons":      {"text/html; charset=utf-8", registerHTML},
 		"/public/register":     {"text/html; charset=utf-8", registerHTML},
 		"/public/register.css": {"text/css; charset=utf-8", registerCSS},
 		"/public/register.js":  {"text/javascript; charset=utf-8", registerJS},
 	} {
 		mux.HandleFunc("GET "+path, func(w http.ResponseWriter, r *http.Request) {
 			body := asset.body
-			if path == "/public/register" || path == "/public/register.css" {
+			if path == "/public/register" || path == "/public/coupons" || path == "/public/register.css" {
 				branding, err := s.BusinessBranding(r.Context())
 				if err != nil {
 					fail(w, err)
 					return
 				}
-				if path == "/public/register" {
+				if path == "/public/register" || path == "/public/coupons" {
 					var rendered bytes.Buffer
-					if err := customerTemplate.Execute(&rendered, branding); err != nil {
+					if err := customerTemplate.Execute(&rendered, struct {
+						crm.BusinessBranding
+						CouponPage bool
+					}{branding, path == "/public/coupons"}); err != nil {
 						fail(w, err)
 						return
 					}

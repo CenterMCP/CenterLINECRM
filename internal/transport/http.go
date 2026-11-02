@@ -18,6 +18,7 @@ func Handler(s *crm.Store) http.Handler {
 	mcpHTTP := server.NewStreamableHTTPServer(MCP(s))
 	mux.Handle("/mcp", mcpHTTP)
 	registerCustomerUI(mux, s)
+	registerMemberSessionRoute(mux, s)
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
 		if err := s.DB.PingContext(r.Context()); err != nil {
 			write(w, 503, map[string]string{"status": "unavailable"})
@@ -34,11 +35,12 @@ func Handler(s *crm.Store) http.Handler {
 			fail(w, err)
 			return
 		}
-		c, token, err := s.Register(r.Context(), in.Name, in.Email)
+		c, token, session, expires, err := s.RegisterMember(r.Context(), in.Name, in.Email)
 		if err != nil {
 			fail(w, err)
 			return
 		}
+		setMemberCookie(w, r, session, expires)
 		write(w, 201, map[string]any{"customer": c, "access_token": token, "token_type": "Bearer"})
 	})
 	mux.HandleFunc("GET /api/v1/privileges", func(w http.ResponseWriter, r *http.Request) {
@@ -52,7 +54,15 @@ func Handler(s *crm.Store) http.Handler {
 	})
 	customer := func(fn func(http.ResponseWriter, *http.Request, string)) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			id, err := s.Authenticate(r.Context(), bearer(r))
+			var id string
+			var err error
+			if token := bearer(r); token != "" {
+				id, err = s.Authenticate(r.Context(), token)
+			} else if cookie, cookieErr := r.Cookie(memberCookieName); cookieErr == nil {
+				id, err = s.AuthenticateMemberSession(r.Context(), cookie.Value)
+			} else {
+				err = crm.ErrUnauthorized
+			}
 			if err != nil {
 				fail(w, err)
 				return

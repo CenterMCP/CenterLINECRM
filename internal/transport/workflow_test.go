@@ -67,14 +67,15 @@ func TestMCPToCustomerRedemptionWorkflow(t *testing.T) {
 		}
 		return result["structuredContent"].(map[string]any)
 	}
-	master := map[string]any{"kind": "tier", "id": "gold", "name": "Gold", "active": true, "data": map[string]any{"minimum_points": 1000}}
+	master := map[string]any{"kind": "tier", "name": "Gold", "active": true, "data": map[string]any{"minimum_points": 1000}}
 	success("save_master_record", master)
 	listed := success("list_master_records", map[string]any{"kind": "tier"})
 	if len(listed["data"].([]any)) != 1 || listed["arguments"].(map[string]any)["kind"] != "tier" {
 		t.Fatal("master data or UI filter context missing")
 	}
-	privilege := map[string]any{"id": "coffee", "name": "Coffee", "description": "One coffee", "cost": 60, "stock": 1, "active": true}
-	success("save_privilege", privilege)
+	privilege := map[string]any{"name": "Coffee", "description": "One coffee", "cost": 60, "stock": 1, "active": true}
+	savedPrivilege := success("save_privilege", privilege)
+	privilegeID := savedPrivilege["data"].(map[string]any)["saved"].(string)
 	request := func(method, path, body, token, key string) *httptest.ResponseRecorder {
 		t.Helper()
 		r := httptest.NewRequest(method, path, strings.NewReader(body))
@@ -106,11 +107,11 @@ func TestMCPToCustomerRedemptionWorkflow(t *testing.T) {
 	if !strings.Contains(points.Body.String(), `"points":100`) {
 		t.Fatal(points.Body)
 	}
-	redeemed := request("POST", "/api/v1/me/redemptions", `{"privilege_id":"coffee"}`, account.Token, "checkout-1")
+	redeemed := request("POST", "/api/v1/me/redemptions", `{"privilege_id":"`+privilegeID+`"}`, account.Token, "checkout-1")
 	if redeemed.Code != 200 {
 		t.Fatal(redeemed.Body)
 	}
-	retry := request("POST", "/api/v1/me/redemptions", `{"privilege_id":"coffee"}`, account.Token, "checkout-1")
+	retry := request("POST", "/api/v1/me/redemptions", `{"privilege_id":"`+privilegeID+`"}`, account.Token, "checkout-1")
 	if retry.Body.String() != redeemed.Body.String() {
 		t.Fatal("redemption retry differed")
 	}
@@ -154,7 +155,7 @@ func TestMCPRejectsInvalidArgumentsWithoutMutating(t *testing.T) {
 	}
 	defer store.Close()
 	call := mcpCaller(t, Handler(store))
-	valid := map[string]any{"id": "tea", "name": "Tea", "description": "Tea reward", "cost": 10, "stock": 2, "active": true}
+	valid := map[string]any{"name": "Tea", "description": "Tea reward", "cost": 10, "stock": 2, "active": true}
 	cases := []struct {
 		name string
 		args map[string]any
@@ -163,7 +164,7 @@ func TestMCPRejectsInvalidArgumentsWithoutMutating(t *testing.T) {
 		{"save_privilege", map[string]any{"id": "tea", "name": "Tea", "description": "Tea reward", "cost": 10, "stock": 2, "active": true, "extra": "unexpected"}},
 		{"save_privilege", map[string]any{"id": "tea", "name": "Tea", "description": "Tea reward", "cost": 0, "stock": 2, "active": true}},
 		{"save_privilege", map[string]any{"id": "tea", "name": "Tea", "description": "Tea reward", "cost": 1.5, "stock": 2, "active": true}},
-		{"save_master_record", map[string]any{"kind": "tier", "id": "gold", "name": "Gold", "active": true, "data": []any{}}},
+		{"save_master_record", map[string]any{"kind": "tier", "name": "Gold", "active": true, "data": []any{}}},
 		{"open_crm_admin", map[string]any{"section": "unknown"}},
 		{"list_privileges", map[string]any{"page": 0}},
 	}
@@ -178,16 +179,18 @@ func TestMCPRejectsInvalidArgumentsWithoutMutating(t *testing.T) {
 	if err = store.DB.QueryRow(`SELECT count(*) FROM privileges`).Scan(&count); err != nil || count != 0 {
 		t.Fatal("invalid calls changed privileges")
 	}
-	if result := call("save_privilege", valid); result["isError"] == true {
+	result := call("save_privilege", valid)
+	if result["isError"] == true {
 		t.Fatal(result)
 	}
+	valid["id"] = result["structuredContent"].(map[string]any)["data"].(map[string]any)["saved"]
 	// Missing active must not silently archive an existing privilege.
 	delete(valid, "active")
 	if result := call("save_privilege", valid); result["isError"] != true {
 		t.Fatal("incomplete edit accepted")
 	}
 	var active bool
-	if err = store.DB.QueryRow(`SELECT active FROM privileges WHERE id='tea'`).Scan(&active); err != nil || !active {
+	if err = store.DB.QueryRow(`SELECT active FROM privileges WHERE id=?`, valid["id"]).Scan(&active); err != nil || !active {
 		t.Fatal("invalid edit archived privilege")
 	}
 }

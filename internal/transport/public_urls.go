@@ -3,6 +3,7 @@ package transport
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/url"
 	"os"
 	"strings"
@@ -16,18 +17,15 @@ func registerPublicURLTool(ms *server.MCPServer) {
 	mcp.WithReadOnlyHintAnnotation(true)(&tool)
 	mcp.WithDestructiveHintAnnotation(false)(&tool)
 	ms.AddTool(tool, func(context.Context, mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		base := strings.TrimSpace(os.Getenv("CRM_BASE_URL"))
-		isTemplate := base == ""
+		base, isTemplate, err := publicServiceBase(false)
+		if err != nil {
+			return mcp.NewToolResultError(err.Error()), nil
+		}
 		message := "Share the registration URL with customers."
 		if isTemplate {
-			base = "https://centermcp.com/<mcp-id>"
 			message = "Replace <mcp-id> with the actual MCP instance ID before sharing, or configure CRM_BASE_URL."
-		} else {
-			u, err := url.Parse(base)
-			if err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Hostname() == "" || u.User != nil || u.RawQuery != "" || u.ForceQuery || u.Fragment != "" || strings.Contains(base, "#") {
-				return mcp.NewToolResultError("CRM_BASE_URL must be an absolute HTTP or HTTPS service URL without credentials, a query, or a fragment. Include any MCP instance prefix, but omit /mcp and /public/register."), nil
-			}
 		}
+
 		result := map[string]any{
 			"registration_url": strings.TrimRight(base, "/") + "/public/register",
 			"is_template":      isTemplate,
@@ -36,4 +34,19 @@ func registerPublicURLTool(ms *server.MCPServer) {
 		body, _ := json.Marshal(result)
 		return mcp.NewToolResultStructured(result, string(body)), nil
 	})
+}
+
+func publicServiceBase(required bool) (string, bool, error) {
+	base := strings.TrimSpace(os.Getenv("CRM_BASE_URL"))
+	if base == "" {
+		if required {
+			return "", false, fmt.Errorf("configure CRM_BASE_URL with the public service base URL to generate personalized member links")
+		}
+		return "https://centermcp.com/<mcp-id>", true, nil
+	}
+	u, err := url.Parse(base)
+	if err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Hostname() == "" || u.User != nil || u.RawQuery != "" || u.ForceQuery || u.Fragment != "" || strings.Contains(base, "#") {
+		return "", false, fmt.Errorf("CRM_BASE_URL must be an absolute HTTP or HTTPS service URL without credentials, a query, or a fragment. Include any MCP instance prefix, but omit /mcp and /public/register.")
+	}
+	return strings.TrimRight(base, "/"), false, nil
 }

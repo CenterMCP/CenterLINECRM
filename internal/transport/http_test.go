@@ -53,19 +53,20 @@ func TestPublicWorkflow(t *testing.T) {
 	if _, err = s.Adjust(context.Background(), registered.Customer.ID, 100, "Purchase", "order-1"); err != nil {
 		t.Fatal(err)
 	}
-	if err = s.SavePrivilege(context.Background(), crm.Privilege{ID: "coffee", Name: "Coffee", Cost: 50, Stock: 1, Active: true}); err != nil {
+	privilege, err := s.SavePrivilege(context.Background(), crm.Privilege{Name: "Coffee", Cost: 50, Stock: 1, Active: true})
+	if err != nil {
 		t.Fatal(err)
 	}
-	w = request("POST", "/api/v1/me/redemptions", `{"privilege_id":"coffee"}`, registered.Token, "")
+	w = request("POST", "/api/v1/me/redemptions", `{"privilege_id":"`+privilege.ID+`"}`, registered.Token, "")
 	if w.Code != 400 {
 		t.Fatal("missing key accepted")
 	}
-	w = request("POST", "/api/v1/me/redemptions", `{"privilege_id":"coffee"}`, registered.Token, "one")
+	w = request("POST", "/api/v1/me/redemptions", `{"privilege_id":"`+privilege.ID+`"}`, registered.Token, "one")
 	if w.Code != 200 {
 		t.Fatal(w.Body.String())
 	}
 	first := w.Body.String()
-	w = request("POST", "/api/v1/me/redemptions", `{"privilege_id":"coffee"}`, registered.Token, "one")
+	w = request("POST", "/api/v1/me/redemptions", `{"privilege_id":"`+privilege.ID+`"}`, registered.Token, "one")
 	if w.Body.String() != first {
 		t.Fatal("retry changed")
 	}
@@ -124,7 +125,7 @@ func TestMCPToolsAndResource(t *testing.T) {
 	if !bytes.Contains(raw, []byte("save_privilege")) || !bytes.Contains(raw, []byte(ResourceURI)) {
 		t.Fatal("tools or UI metadata missing")
 	}
-	rpc(`{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"save_privilege","arguments":{"id":"tea","name":"Tea","description":"Tea reward","cost":10,"stock":2,"active":true}}}`)
+	rpc(`{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"save_privilege","arguments":{"name":"Tea","description":"Tea reward","cost":10,"stock":2,"active":true}}}`)
 	p, err := s.Privileges(context.Background(), false, 0)
 	if err != nil || len(p) != 1 {
 		t.Fatal("MCP save failed")

@@ -90,6 +90,9 @@ INSERT OR IGNORE INTO schema_version VALUES(1);
 CREATE TABLE IF NOT EXISTS master_records(kind TEXT NOT NULL,id TEXT NOT NULL,name TEXT NOT NULL,active INTEGER NOT NULL,data TEXT NOT NULL CHECK(json_valid(data)),PRIMARY KEY(kind,id));
 CREATE TABLE IF NOT EXISTS privileges(id TEXT PRIMARY KEY,name TEXT NOT NULL,description TEXT NOT NULL,cost INTEGER NOT NULL CHECK(cost>0 AND cost<=1000000000),stock INTEGER NOT NULL CHECK(stock>=0),active INTEGER NOT NULL);
 CREATE TABLE IF NOT EXISTS customers(id TEXT PRIMARY KEY,name TEXT NOT NULL,email TEXT NOT NULL UNIQUE,active INTEGER NOT NULL DEFAULT 1,points INTEGER NOT NULL DEFAULT 0 CHECK(points>=0 AND points<=9000000000000000),token_hash TEXT NOT NULL UNIQUE,created_at TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS member_links(token_hash TEXT PRIMARY KEY,customer_id TEXT NOT NULL REFERENCES customers(id),expires_at TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS member_sessions(token_hash TEXT PRIMARY KEY,customer_id TEXT NOT NULL REFERENCES customers(id),expires_at TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS customer_import_identities(source TEXT NOT NULL,external_id TEXT NOT NULL,customer_id TEXT NOT NULL REFERENCES customers(id),PRIMARY KEY(source,external_id),UNIQUE(source,customer_id));
 CREATE TABLE IF NOT EXISTS point_ledger(id TEXT PRIMARY KEY,customer_id TEXT NOT NULL REFERENCES customers(id),delta INTEGER NOT NULL,reason TEXT NOT NULL,reference TEXT NOT NULL,created_at TEXT NOT NULL,UNIQUE(customer_id,reference));
 CREATE TABLE IF NOT EXISTS redemptions(id TEXT PRIMARY KEY,customer_id TEXT NOT NULL REFERENCES customers(id),privilege_id TEXT NOT NULL REFERENCES privileges(id),name TEXT NOT NULL,cost INTEGER NOT NULL,idempotency_key TEXT NOT NULL,created_at TEXT NOT NULL,UNIQUE(customer_id,idempotency_key));
 CREATE INDEX IF NOT EXISTS ledger_customer ON point_ledger(customer_id,created_at);
@@ -112,19 +115,33 @@ func dbError(err error) error {
 	}
 	return err
 }
-func (s *Store) SaveRecord(ctx context.Context, r Record) error {
-	if !valid(r.Kind, 80) || !valid(r.ID, 120) || !valid(r.Name, 200) || len(r.Data) > 32000 {
-		return ErrInvalid
+
+// SaveRecord generates IDs on creation; a supplied ID must already exist.
+func (s *Store) SaveRecord(ctx context.Context, r Record) (Record, error) {
+	if !valid(r.Kind, 80) || !valid(r.Name, 200) || len(r.Data) > 32000 || (r.ID != "" && !valid(r.ID, 120)) {
+		return r, ErrInvalid
 	}
 	if len(r.Data) == 0 {
 		r.Data = json.RawMessage(`{}`)
 	}
 	var obj map[string]any
 	if json.Unmarshal(r.Data, &obj) != nil || obj == nil {
-		return ErrInvalid
+		return r, ErrInvalid
 	}
-	_, err := s.DB.ExecContext(ctx, `INSERT INTO master_records VALUES(?,?,?,?,?) ON CONFLICT(kind,id) DO UPDATE SET name=excluded.name,active=excluded.active,data=excluded.data`, r.Kind, r.ID, r.Name, r.Active, string(r.Data))
-	return err
+	if r.ID == "" {
+		r.ID = ID()
+		_, err := s.DB.ExecContext(ctx, `INSERT INTO master_records VALUES(?,?,?,?,?)`, r.Kind, r.ID, r.Name, r.Active, string(r.Data))
+		return r, err
+	}
+	result, err := s.DB.ExecContext(ctx, `UPDATE master_records SET name=?,active=?,data=? WHERE kind=? AND id=?`, r.Name, r.Active, string(r.Data), r.Kind, r.ID)
+	if err != nil {
+		return r, err
+	}
+	count, err := result.RowsAffected()
+	if err == nil && count == 0 {
+		err = ErrNotFound
+	}
+	return r, err
 }
 func (s *Store) Records(ctx context.Context, kind string, offset int) ([]Record, error) {
 	rows, err := s.DB.QueryContext(ctx, `SELECT kind,id,name,active,data FROM master_records WHERE (?='' OR kind=?) ORDER BY kind,id LIMIT 100 OFFSET ?`, kind, kind, offset)
@@ -144,12 +161,26 @@ func (s *Store) Records(ctx context.Context, kind string, offset int) ([]Record,
 	}
 	return out, rows.Err()
 }
-func (s *Store) SavePrivilege(ctx context.Context, p Privilege) error {
-	if !valid(p.ID, 120) || !valid(p.Name, 200) || len(p.Description) > 4000 || p.Cost < 1 || p.Cost > 1000000000 || p.Stock < 0 || p.Stock > 1000000000 {
-		return ErrInvalid
+
+// SavePrivilege generates IDs on creation; a supplied ID must already exist.
+func (s *Store) SavePrivilege(ctx context.Context, p Privilege) (Privilege, error) {
+	if (p.ID != "" && !valid(p.ID, 120)) || !valid(p.Name, 200) || len(p.Description) > 4000 || p.Cost < 1 || p.Cost > 1000000000 || p.Stock < 0 || p.Stock > 1000000000 {
+		return p, ErrInvalid
 	}
-	_, err := s.DB.ExecContext(ctx, `INSERT INTO privileges VALUES(?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,description=excluded.description,cost=excluded.cost,stock=excluded.stock,active=excluded.active`, p.ID, p.Name, p.Description, p.Cost, p.Stock, p.Active)
-	return err
+	if p.ID == "" {
+		p.ID = ID()
+		_, err := s.DB.ExecContext(ctx, `INSERT INTO privileges VALUES(?,?,?,?,?,?)`, p.ID, p.Name, p.Description, p.Cost, p.Stock, p.Active)
+		return p, err
+	}
+	result, err := s.DB.ExecContext(ctx, `UPDATE privileges SET name=?,description=?,cost=?,stock=?,active=? WHERE id=?`, p.Name, p.Description, p.Cost, p.Stock, p.Active, p.ID)
+	if err != nil {
+		return p, err
+	}
+	count, err := result.RowsAffected()
+	if err == nil && count == 0 {
+		err = ErrNotFound
+	}
+	return p, err
 }
 func (s *Store) Privileges(ctx context.Context, public bool, offset int) ([]Privilege, error) {
 	rows, err := s.DB.QueryContext(ctx, `SELECT id,name,description,cost,stock,active FROM privileges WHERE (?=0 OR active=1) ORDER BY id LIMIT 100 OFFSET ?`, public, offset)
@@ -168,13 +199,25 @@ func (s *Store) Privileges(ctx context.Context, public bool, offset int) ([]Priv
 	return out, rows.Err()
 }
 func (s *Store) Register(ctx context.Context, name, email string) (Customer, string, error) {
+	tx, err := s.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return Customer{}, "", err
+	}
+	defer tx.Rollback()
+	c, token, err := registerMemberTx(ctx, tx, name, email)
+	if err != nil {
+		return Customer{}, "", err
+	}
+	return c, token, tx.Commit()
+}
+func registerMemberTx(ctx context.Context, tx *sql.Tx, name, email string) (Customer, string, error) {
 	email = strings.ToLower(strings.TrimSpace(email))
 	if !valid(name, 200) || !valid(email, 254) || !strings.Contains(email, "@") {
 		return Customer{}, "", ErrInvalid
 	}
 	c := Customer{ID: ID(), Name: strings.TrimSpace(name), Email: email, Active: true}
 	token := ID() + ID()
-	_, err := s.DB.ExecContext(ctx, `INSERT INTO customers(id,name,email,token_hash,created_at) VALUES(?,?,?,?,?)`, c.ID, c.Name, c.Email, hash(token), now())
+	_, err := tx.ExecContext(ctx, `INSERT INTO customers(id,name,email,token_hash,created_at) VALUES(?,?,?,?,?)`, c.ID, c.Name, c.Email, hash(token), now())
 	if err != nil {
 		if strings.Contains(err.Error(), "UNIQUE") {
 			return Customer{}, "", ErrConflict
@@ -230,16 +273,24 @@ func (s *Store) UpdateCustomer(ctx context.Context, id, name string, active bool
 	return nil
 }
 func (s *Store) Adjust(ctx context.Context, id string, delta int64, reason, ref string) (Entry, error) {
-	if delta == 0 || delta > 1000000000 || delta < -1000000000 || !valid(reason, 500) || !valid(ref, 120) || strings.HasPrefix(ref, "redeem:") {
-		return Entry{}, ErrInvalid
-	}
 	tx, err := s.DB.BeginTx(ctx, nil)
 	if err != nil {
 		return Entry{}, err
 	}
 	defer tx.Rollback()
+	entry, err := adjustPointsTx(ctx, tx, id, delta, reason, ref)
+	if err != nil {
+		return Entry{}, err
+	}
+	return entry, tx.Commit()
+}
+
+func adjustPointsTx(ctx context.Context, tx *sql.Tx, id string, delta int64, reason, ref string) (Entry, error) {
+	if !valid(id, 120) || delta == 0 || delta > 1000000000 || delta < -1000000000 || !valid(reason, 500) || !valid(ref, 120) || strings.HasPrefix(ref, "redeem:") {
+		return Entry{}, ErrInvalid
+	}
 	var e Entry
-	err = tx.QueryRowContext(ctx, `SELECT id,customer_id,delta,reason,reference,created_at FROM point_ledger WHERE customer_id=? AND reference=?`, id, ref).Scan(&e.ID, &e.CustomerID, &e.Delta, &e.Reason, &e.Reference, &e.CreatedAt)
+	err := tx.QueryRowContext(ctx, `SELECT id,customer_id,delta,reason,reference,created_at FROM point_ledger WHERE customer_id=? AND reference=?`, id, ref).Scan(&e.ID, &e.CustomerID, &e.Delta, &e.Reason, &e.Reference, &e.CreatedAt)
 	if err == nil {
 		if e.Delta != delta || e.Reason != reason {
 			return Entry{}, ErrConflict
@@ -262,7 +313,7 @@ func (s *Store) Adjust(ctx context.Context, id string, delta int64, reason, ref 
 	if err != nil {
 		return e, err
 	}
-	return e, tx.Commit()
+	return e, nil
 }
 func (s *Store) Redeem(ctx context.Context, id, pid, key string) (Redemption, error) {
 	var r Redemption

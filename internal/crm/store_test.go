@@ -17,7 +17,7 @@ func testStore(t *testing.T) *Store {
 	t.Cleanup(func() { s.Close() })
 	return s
 }
-func seed(t *testing.T, s *Store) (context.Context, Customer) {
+func seed(t *testing.T, s *Store) (context.Context, Customer, Privilege) {
 	t.Helper()
 	ctx := context.Background()
 	c, _, err := s.Register(ctx, "Alice", "alice@example.com")
@@ -27,29 +27,30 @@ func seed(t *testing.T, s *Store) (context.Context, Customer) {
 	if _, err = s.Adjust(ctx, c.ID, 100, "Purchase", "order-1"); err != nil {
 		t.Fatal(err)
 	}
-	if err = s.SavePrivilege(ctx, Privilege{ID: "coffee", Name: "Coffee", Cost: 60, Stock: 1, Active: true}); err != nil {
-		t.Fatal(err)
-	}
-	return ctx, c
-}
-func TestRedemptionRetryAndRollback(t *testing.T) {
-	s := testStore(t)
-	ctx, c := seed(t, s)
-	first, err := s.Redeem(ctx, c.ID, "coffee", "request-1")
+	privilege, err := s.SavePrivilege(ctx, Privilege{Name: "Coffee", Cost: 60, Stock: 1, Active: true})
 	if err != nil {
 		t.Fatal(err)
 	}
-	retry, err := s.Redeem(ctx, c.ID, "coffee", "request-1")
+	return ctx, c, privilege
+}
+func TestRedemptionRetryAndRollback(t *testing.T) {
+	s := testStore(t)
+	ctx, c, privilege := seed(t, s)
+	first, err := s.Redeem(ctx, c.ID, privilege.ID, "request-1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	retry, err := s.Redeem(ctx, c.ID, privilege.ID, "request-1")
 	if err != nil || first.ID != retry.ID {
 		t.Fatalf("retry: %+v %v", retry, err)
 	}
 	if _, err = s.Redeem(ctx, c.ID, "other", "request-1"); !errors.Is(err, ErrConflict) {
 		t.Fatalf("changed retry accepted: %v", err)
 	}
-	if err = s.SavePrivilege(ctx, Privilege{ID: "coffee", Name: "Coffee", Cost: 60, Stock: 1, Active: true}); err != nil {
+	if _, err = s.SavePrivilege(ctx, privilege); err != nil {
 		t.Fatal(err)
 	}
-	if _, err = s.Redeem(ctx, c.ID, "coffee", "request-2"); !errors.Is(err, ErrConflict) {
+	if _, err = s.Redeem(ctx, c.ID, privilege.ID, "request-2"); !errors.Is(err, ErrConflict) {
 		t.Fatalf("overspend accepted: %v", err)
 	}
 	got, _ := s.Customer(ctx, c.ID)
@@ -66,7 +67,7 @@ func TestConcurrentRedemptionAcrossConnections(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer s.Close()
-	ctx, c := seed(t, s)
+	ctx, c, privilege := seed(t, s)
 	second, err := Open(path)
 	if err != nil {
 		t.Fatal(err)
@@ -78,7 +79,7 @@ func TestConcurrentRedemptionAcrossConnections(t *testing.T) {
 		wg.Add(1)
 		go func(i int, store *Store) {
 			defer wg.Done()
-			_, err := store.Redeem(ctx, c.ID, "coffee", string(rune('a'+i)))
+			_, err := store.Redeem(ctx, c.ID, privilege.ID, string(rune('a'+i)))
 			results <- err
 		}(i, store)
 	}
@@ -149,7 +150,7 @@ func TestPersistenceAndValidation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ctx, c := seed(t, s)
+	ctx, c, _ := seed(t, s)
 	s.Close()
 	s, err = Open(path)
 	if err != nil {
@@ -161,7 +162,7 @@ func TestPersistenceAndValidation(t *testing.T) {
 		t.Fatal("balance did not persist")
 	}
 	for _, p := range []Privilege{{ID: "p", Name: "P", Cost: -1}, {ID: "p", Name: "P", Cost: 1, Stock: -1}} {
-		if !errors.Is(s.SavePrivilege(ctx, p), ErrInvalid) {
+		if _, err := s.SavePrivilege(ctx, p); !errors.Is(err, ErrInvalid) {
 			t.Fatal("invalid privilege accepted")
 		}
 	}

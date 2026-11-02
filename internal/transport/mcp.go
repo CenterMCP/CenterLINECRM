@@ -10,7 +10,7 @@ import (
 	"github.com/mark3labs/mcp-go/server"
 )
 
-const Version = "0.2.0"
+const Version = "0.4.0"
 
 const ResourceURI = "ui://centerlinecrm/admin/v1.html"
 
@@ -37,6 +37,8 @@ type input struct {
 func MCP(s *crm.Store) *server.MCPServer {
 	ms := server.NewMCPServer("CenterLINECRM", Version, server.WithResourceCapabilities(false, false), server.WithInputSchemaValidation())
 	registerPublicURLTool(ms)
+	registerBulkTools(ms, s)
+	registerMemberLinkTool(ms, s)
 	resource := mcp.NewResource(ResourceURI, "centerlinecrm-admin", mcp.WithResourceTitle("CenterLINECRM master data"), mcp.WithMIMEType("text/html;profile=mcp-app"))
 	ms.AddResource(resource, func(context.Context, mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
 		return []mcp.ResourceContents{mcp.TextResourceContents{URI: ResourceURI, MIMEType: "text/html;profile=mcp-app", Text: adminHTML}}, nil
@@ -50,9 +52,9 @@ func MCP(s *crm.Store) *server.MCPServer {
 	specs := []spec{
 		{"update_business_branding", "Set the business branding on the public registration and member CRM page. Supply business_name, an absolute HTTPS logo_url (empty to remove), and primary_color as #RRGGBB. All three fields are required. Changes appear on the next page load.", false, map[string]string{"business_name": "string", "logo_url": "string", "primary_color": "string"}, []string{"business_name", "logo_url", "primary_color"}},
 		{"open_crm_admin", "Open the CRM editor. Choose master, privileges, customers, points, or redemptions; supply customer_id for customer-specific history.", true, map[string]string{"section": "string", "customer_id": "string"}, nil},
-		{"save_master_record", "Create or update master data: tiers, branches, categories, program settings or other kinds. Use active=false to archive.", false, map[string]string{"kind": "string", "id": "string", "name": "string", "active": "boolean", "data": "object"}, []string{"kind", "id", "name", "active", "data"}},
+		{"save_master_record", "Create master data with an automatically generated ID (omit id), or update an existing record using its returned id: tiers, branches, categories, program settings or other kinds. Use active=false to archive.", false, map[string]string{"kind": "string", "id": "string", "name": "string", "active": "boolean", "data": "object"}, []string{"kind", "name", "active", "data"}},
 		{"list_master_records", "List all master data, optionally filtered by kind. Pages contain at most 100 records.", true, map[string]string{"kind": "string", "page": "integer"}, nil},
-		{"save_privilege", "Create or update a privilege. Cost is positive integer points. Stock is remaining units. Use active=false to archive.", false, map[string]string{"id": "string", "name": "string", "description": "string", "cost": "integer", "stock": "integer", "active": "boolean"}, []string{"id", "name", "description", "cost", "stock", "active"}},
+		{"save_privilege", "Create a privilege/coupon with an automatically generated ID (omit id), or update an existing privilege using its returned id. Cost is positive integer points. Stock is remaining units. Use active=false to archive.", false, map[string]string{"id": "string", "name": "string", "description": "string", "cost": "integer", "stock": "integer", "active": "boolean"}, []string{"name", "description", "cost", "stock", "active"}},
 		{"list_privileges", "List active and archived privileges.", true, map[string]string{"page": "integer"}, nil},
 		{"list_customers", "List customer profiles and point balances.", true, map[string]string{"page": "integer"}, nil},
 		{"update_customer", "Update a customer name and active status; balances must use adjust_points.", false, map[string]string{"id": "string", "name": "string", "active": "boolean"}, []string{"id", "name", "active"}},
@@ -121,13 +123,15 @@ func MCP(s *crm.Store) *server.MCPServer {
 			case "open_crm_admin":
 				value = map[string]any{"message": "Use the editor to manage master records and privileges. Archive records by setting active to false."}
 			case "save_master_record":
-				err = s.SaveRecord(ctx, crm.Record{Kind: in.Kind, ID: in.ID, Name: in.Name, Active: in.Active, Data: in.Data})
-				value = map[string]any{"saved": in.ID}
+				var record crm.Record
+				record, err = s.SaveRecord(ctx, crm.Record{Kind: in.Kind, ID: in.ID, Name: in.Name, Active: in.Active, Data: in.Data})
+				value = map[string]any{"saved": record.ID, "record": record}
 			case "list_master_records":
 				value, err = s.Records(ctx, in.Kind, offset)
 			case "save_privilege":
-				err = s.SavePrivilege(ctx, crm.Privilege{ID: in.ID, Name: in.Name, Description: in.Description, Cost: in.Cost, Stock: in.Stock, Active: in.Active})
-				value = map[string]any{"saved": in.ID}
+				var privilege crm.Privilege
+				privilege, err = s.SavePrivilege(ctx, crm.Privilege{ID: in.ID, Name: in.Name, Description: in.Description, Cost: in.Cost, Stock: in.Stock, Active: in.Active})
+				value = map[string]any{"saved": privilege.ID, "record": privilege}
 			case "list_privileges":
 				value, err = s.Privileges(ctx, false, offset)
 			case "list_customers":

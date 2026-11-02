@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light">
-  <title>Join the club · {{.BusinessName}}</title>
+  <title>{{if .CouponPage}}Your coupons{{else}}Join the club{{end}} · {{.BusinessName}}</title>
   <link rel="stylesheet" href="./register.css">
   <script src="./register.js" defer></script>
 </head>
@@ -15,7 +15,9 @@
       <span class="club-badge">MEMBER CLUB <span aria-hidden="true">✦</span></span>
     </header>
     <main>
-      <section id="registration" aria-labelledby="form-title">
+ <p id="member-loading" class="empty-state" role="status" hidden>Opening your membership…</p>
+ <p id="member-error" class="message error" role="alert" hidden></p>
+      <section id="registration" aria-labelledby="form-title"{{if .CouponPage}} hidden{{end}}>
         <div class="welcome">
           <span class="welcome-icon" aria-hidden="true">✦</span>
           <p class="eyebrow">LITTLE VISITS. LOVELY REWARDS.</p>
@@ -36,7 +38,7 @@
             <button id="submit" class="primary" type="submit">Join the member club <span aria-hidden="true">↗</span></button>
             <p class="fine-print">We’ll use your name and email to create your membership. Start with 0 points and earn toward your first coupon.</p>
           </form>
-          <noscript><p class="message error">Please enable JavaScript to register and save your membership access key.</p></noscript>
+          <noscript><p class="message error">Please enable JavaScript to join the club and view your coupons.</p></noscript>
         </div>
         <p class="welcome-footnote">A little closer to your next reward. <span aria-hidden="true">♡</span></p>
       </section>
@@ -60,18 +62,10 @@
           <button id="load-more" class="secondary" type="button" hidden>Show more coupons</button>
           <p class="fine-print">Redeeming a coupon spends the points shown. Availability may change.</p>
         </section>
-        <details id="membership-key" class="account-details">
-          <summary>Your membership &amp; access key <span aria-hidden="true">⌄</span></summary>
-          <dl><div><dt>Email</dt><dd id="member-email"></dd></div><div><dt>Member ID</dt><dd id="member-id"></dd></div></dl>
-          <h3>Keep your membership close</h3>
-          <p class="muted">Save your access key before leaving or refreshing this page. It gives access to your membership, so keep it private.</p>
-          <details class="key-details"><summary>Show access key</summary><code id="access-key"></code></details>
-          <button id="download" class="primary" type="button">Download membership details <span aria-hidden="true">↓</span></button>
-          <button id="copy" class="secondary" type="button">Copy access key</button>
-          <p id="save-status" class="field-help" role="status" aria-live="polite"></p>
-          <p class="fine-print">Your access key is not saved in this browser. Email verification and account recovery are currently unavailable.</p>
-        </details>
-        <p class="key-reminder">Keep your access key before you go. <a href="#membership-key">Save membership details ↓</a></p>
+        <section class="account-details" aria-label="Membership details">
+          <h3>Your membership</h3>
+          <dl><div><dt>Email</dt><dd id="member-email"></dd></div></dl>
+        </section>
       </section>
     </main>
     <footer><span class="footer-mark" aria-hidden="true">✦</span><span>A little more rewarding, every day.</span><small>POWERED BY CENTERLINECRM</small></footer>

@@ -25,7 +25,7 @@ class Element {
   click() { return this.listeners.click?.(); }
 }
 
-function setup({ items = [], points = 0, redeem } = {}) {
+function setup({ items = [], points = 0, redeem, href = 'https://example.com/instance/public/register', sessionFail = false } = {}) {
   const nodes = new Map();
   const get = (id) => {
     if (!nodes.has(id)) nodes.set(id, new Element());
@@ -52,9 +52,15 @@ function setup({ items = [], points = 0, redeem } = {}) {
     if (url.pathname.endsWith('/register')) {
       return response(201, { customer: { id: 'member-1', name: 'Test Member', email: 'test@example.com', points: 0 }, access_token: 'private-token' });
     }
-    assert.equal(options.headers.Authorization, 'Bearer private-token');
-    assert.equal(options.credentials, 'omit');
+    assert.equal(options.headers?.Authorization, undefined);
+    assert.equal(options.credentials, 'same-origin');
     assert.ok(url.pathname.startsWith('/instance/api/v1/'));
+    if (url.pathname.endsWith('/member-session')) {
+      assert.equal(options.method, 'POST');
+      assert.equal(JSON.parse(options.body).member, 'personal-link-value');
+      return response(sessionFail ? 401 : 200, { customer: { id: 'member-1', name: 'Test Member', email: 'test@example.com', points: state.points } });
+    }
+    if (url.pathname.endsWith('/me')) return response(sessionFail ? 401 : 200, { id: 'member-1', name: 'Test Member', email: 'test@example.com', points: state.points });
     if (url.pathname.endsWith('/points')) return response(state.pointsFail ? 503 : 200, { points: state.points });
     if (url.pathname.endsWith('/privileges')) {
       const page = Number(url.searchParams.get('page'));
@@ -63,13 +69,18 @@ function setup({ items = [], points = 0, redeem } = {}) {
     if (url.pathname.endsWith('/redemptions')) return state.redeem(options, state, response);
     throw new Error(`Unexpected request: ${url}`);
   };
+  const history = [];
+  const location = { href };
+  get('confirmation').hidden = true;
+  get('registration').hidden = new URL(href).pathname.endsWith('/coupons');
   runInNewContext(readFileSync(require.resolve('../internal/transport/register.js'), 'utf8'), {
     document: { getElementById: get, querySelector: get, title: '' },
-    window: { location: { href: 'https://example.com/instance/public/register' } },
-    fetch, URL, TextEncoder, Uint8Array, crypto: webcrypto,
+    window: { location, history: { replaceState(_state, _unused, target) { location.href = new URL(target, location.href).href; history.push(location.href); } } },
+    fetch, URL, URLSearchParams, TextEncoder, Uint8Array, crypto: webcrypto,
   });
   return {
-    get, state, requests,
+    get, state, requests, history, location,
+    settle: () => new Promise(resolve => setImmediate(resolve)),
     register: () => form.listeners.submit({ preventDefault() {} }),
     cards: () => get('coupon-list').children,
   };
@@ -191,4 +202,44 @@ test('a rejected redemption refreshes changed stock and points without claiming 
   assert.equal(ui.cards()[0].querySelector('.redeem-button').textContent, 'Sold out');
   assert.equal(ui.get('redemption-status').classes.has('error'), true);
   assert.match(ui.get('redemption-status').textContent, /couldn’t be redeemed/);
+});
+
+
+test('personalized member link opens coupons directly and clears the URL fragment after session exchange', async () => {
+  const ui = setup({ href: 'https://example.com/instance/public/coupons#member=personal-link-value', points: 100, items: [coupon()] });
+  await ui.settle();
+  assert.equal(ui.requests.some(r => r.url.pathname.endsWith('/register')), false);
+  assert.equal(ui.get('registration').hidden, true);
+  assert.equal(ui.get('confirmation').hidden, false);
+  assert.equal(ui.get('member-name').textContent, 'Test Member');
+  assert.equal(ui.cards().length, 1);
+  assert.equal(ui.cards()[0].querySelector('.redeem-button').disabled, false);
+  assert.equal(ui.location.href, 'https://example.com/instance/public/coupons');
+  assert.equal(ui.get('member-loading').hidden, true);
+});
+
+test('reloading the coupon page resumes the browser session without a member fragment', async () => {
+  const ui = setup({ href: 'https://example.com/instance/public/coupons', points: 80, items: [coupon()] });
+  await ui.settle();
+  assert.equal(ui.requests[0].url.pathname, '/instance/api/v1/me');
+  assert.equal(ui.get('confirmation').hidden, false);
+  assert.equal(ui.get('member-points').textContent, '80');
+  assert.equal(ui.cards().length, 1);
+});
+
+test('invalid member links do not expose membership or request an access key', async () => {
+  const ui = setup({ href: 'https://example.com/instance/public/coupons#member=personal-link-value', sessionFail: true });
+  await ui.settle();
+  assert.equal(ui.get('confirmation').hidden, true);
+  assert.equal(ui.get('member-error').hidden, false);
+  assert.match(ui.get('member-error').textContent, /personal member link/);
+  assert.doesNotMatch(ui.get('member-error').textContent, /access key|credential/i);
+  assert.equal(ui.requests.length, 1);
+});
+
+test('consumer page has no access-key controls or saving instructions', () => {
+  const html = readFileSync(require.resolve('../internal/transport/register.html'), 'utf8');
+  const js = readFileSync(require.resolve('../internal/transport/register.js'), 'utf8');
+  assert.doesNotMatch(html, /access.key|credential|id="copy"|id="download"|membership-key/i);
+  assert.doesNotMatch(js, /access_token|access.key|navigator.clipboard|createObjectURL/i);
 });

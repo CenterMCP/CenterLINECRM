@@ -23,27 +23,20 @@ form.addEventListener('submit', async (event) => {
     const response = await fetch(form.action, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      credentials: 'omit',
+      credentials: 'same-origin',
       body: JSON.stringify({ name, email }),
     });
     if (!response.ok) {
       const messages = {
         400: 'Please check your name and email address and try again.',
-        409: 'This email is already registered. Use your saved membership access key. If you have lost it, contact the membership team; account recovery is currently unavailable.',
+        409: 'You’re already a member. Open your personal member link, or ask the membership team to send you one.',
         429: 'Too many attempts. Please wait a moment and try again.',
       };
       throw new Error(messages[response.status] || 'We couldn’t create your membership right now. Please try again later.');
     }
-    membership = await response.json();
-    document.getElementById('member-name').textContent = membership.customer.name;
-    document.getElementById('member-email').textContent = membership.customer.email;
-    document.getElementById('member-id').textContent = membership.customer.id;
-    document.getElementById('member-points').textContent = membership.customer.points.toLocaleString();
-    document.getElementById('access-key').textContent = membership.access_token;
-    document.getElementById('registration').hidden = true;
-    document.getElementById('confirmation').hidden = false;
-    document.getElementById('success-title').focus();
-    document.title = 'Membership created · CenterLINECRM';
+    const result = await response.json();
+    showMembership(result.customer);
+    window.history.replaceState(null, '', new URL('./coupons', window.location.href).href);
     form.reset();
     await loadRewards(true);
   } catch (failure) {
@@ -58,35 +51,17 @@ form.addEventListener('submit', async (event) => {
   }
 });
 
-document.getElementById('copy').addEventListener('click', async () => {
-  const status = document.getElementById('save-status');
-  try {
-    await navigator.clipboard.writeText(membership.access_token);
-    status.textContent = 'Access key copied. Store it somewhere private.';
-  } catch {
-    status.textContent = 'Copy is unavailable. Use “Show access key” to copy it manually, or download your details.';
-  }
-});
-
-document.getElementById('download').addEventListener('click', () => {
-  const contents = [
-    'CenterLINECRM membership — keep this file private',
-    `Service: ${new URL('../', window.location.href).href}`,
-    `Name: ${membership.customer.name}`,
-    `Email: ${membership.customer.email}`,
-    `Member ID: ${membership.customer.id}`,
-    `Access key: ${membership.access_token}`,
-    '',
-    'This key provides access to your membership. Account recovery is currently unavailable.',
-  ].join('\n');
-  const url = URL.createObjectURL(new Blob([contents], { type: 'text/plain;charset=utf-8' }));
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = 'membership-details.txt';
-  link.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-  document.getElementById('save-status').textContent = 'Download requested. Keep your membership file somewhere private.';
-});
+function showMembership(customer) {
+  membership = { customer };
+  document.title = document.title.replace(/^Join the club/, 'Your coupons');
+  document.getElementById('member-name').textContent = customer.name;
+  document.getElementById('member-email').textContent = customer.email;
+  document.getElementById('member-points').textContent = customer.points.toLocaleString();
+  document.getElementById('registration').hidden = true;
+  document.getElementById('confirmation').hidden = false;
+  document.getElementById('member-error').hidden = true;
+  document.getElementById('success-title').focus();
+}
 
 const coupons = new Map();
 const pendingRedemptions = new Map();
@@ -104,9 +79,8 @@ const redemptionStatus = document.getElementById('redemption-status');
 async function customerRequest(path, options = {}) {
   return fetch(new URL(`../api/v1/${path}`, window.location.href), {
     ...options,
-    credentials: 'omit',
+    credentials: 'same-origin',
     headers: {
-      Authorization: `Bearer ${membership.access_token}`,
       ...options.headers,
     },
   });
@@ -245,6 +219,37 @@ async function redeemCoupon(coupon) {
 
 refreshButton.addEventListener('click', () => loadRewards(true));
 moreButton.addEventListener('click', () => loadRewards(false));
-document.querySelector('.key-reminder a').addEventListener('click', () => {
-  document.getElementById('membership-key').open = true;
-});
+// Personal member links keep the opaque member value in the fragment so it
+// is not sent in page requests or referrers. Exchange it once for this browser.
+async function openMemberPage() {
+  const loading = document.getElementById('member-loading');
+  const failure = document.getElementById('member-error');
+  loading.hidden = false;
+  try {
+    const current = new URL(window.location.href);
+    const member = new URLSearchParams(current.hash.slice(1)).get('member');
+    let response;
+    if (member) {
+      response = await fetch(new URL('../api/v1/member-session', current), {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ member }),
+      });
+    } else {
+      response = await customerRequest('me');
+    }
+    if (!response.ok) throw new Error('We couldn’t open your membership. Please ask the membership team for a new personal member link.');
+    const result = await response.json();
+    showMembership(member ? result.customer : result);
+    if (member) window.history.replaceState(null, '', current.pathname + current.search);
+    await loadRewards(true);
+  } catch (error) {
+    failure.textContent = error instanceof TypeError
+      ? 'We couldn’t open your membership. Check your connection and try your member link again.'
+      : error.message;
+    failure.hidden = false;
+  } finally {
+    loading.hidden = true;
+  }
+}
+
+if (new URL(window.location.href).pathname.endsWith('/coupons')) openMemberPage();
