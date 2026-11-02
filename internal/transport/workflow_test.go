@@ -26,7 +26,6 @@ func mcpCaller(t *testing.T, h http.Handler) func(string, map[string]any) map[st
 			t.Fatal(err)
 		}
 		r := httptest.NewRequest("POST", "/mcp", bytes.NewReader(body))
-		r.Header.Set("Authorization", "Bearer "+strings.Repeat("a", 32))
 		r.Header.Set("Content-Type", "application/json")
 		r.Header.Set("Accept", "application/json, text/event-stream")
 		if session != "" {
@@ -58,7 +57,7 @@ func TestMCPToCustomerRedemptionWorkflow(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer store.Close()
-	handler := Handler(store, strings.Repeat("a", 32))
+	handler := Handler(store)
 	call := mcpCaller(t, handler)
 	success := func(name string, args map[string]any) map[string]any {
 		t.Helper()
@@ -154,7 +153,7 @@ func TestMCPRejectsInvalidArgumentsWithoutMutating(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer store.Close()
-	call := mcpCaller(t, Handler(store, strings.Repeat("a", 32)))
+	call := mcpCaller(t, Handler(store))
 	valid := map[string]any{"id": "tea", "name": "Tea", "description": "Tea reward", "cost": 10, "stock": 2, "active": true}
 	cases := []struct {
 		name string

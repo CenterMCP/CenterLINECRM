@@ -1,7 +1,6 @@
 package transport
 
 import (
-	"crypto/subtle"
 	"encoding/json"
 	"errors"
 	"io"
@@ -14,17 +13,10 @@ import (
 	"github.com/mark3labs/mcp-go/server"
 )
 
-func Handler(s *crm.Store, adminToken string) http.Handler {
+func Handler(s *crm.Store) http.Handler {
 	mux := http.NewServeMux()
 	mcpHTTP := server.NewStreamableHTTPServer(MCP(s))
-	mux.Handle("/mcp", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		token := bearer(r)
-		if adminToken == "" || subtle.ConstantTimeCompare([]byte(token), []byte(adminToken)) != 1 {
-			write(w, 401, map[string]string{"error": "unauthorized"})
-			return
-		}
-		mcpHTTP.ServeHTTP(w, r)
-	}))
+	mux.Handle("/mcp", mcpHTTP)
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
 		if err := s.DB.PingContext(r.Context()); err != nil {
 			write(w, 503, map[string]string{"status": "unavailable"})

@@ -20,10 +20,6 @@ func main() {
 	database := flag.String("database", "./data/centerlinecrm.db", "SQLite database path")
 	address := flag.String("address", "127.0.0.1:8000", "HTTP listen address")
 	flag.Parse()
-	token := os.Getenv("CRM_ADMIN_TOKEN")
-	if len(token) < 32 {
-		log.Fatal("Set CRM_ADMIN_TOKEN to a random secret of at least 32 characters")
-	}
 	abs, err := filepath.Abs(*database)
 	if err != nil {
 		log.Fatal(err)
@@ -36,7 +32,7 @@ func main() {
 		log.Fatal(err)
 	}
 	defer s.Close()
-	srv := &http.Server{Addr: *address, Handler: transport.Handler(s, token), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 16384}
+	srv := &http.Server{Addr: *address, Handler: transport.Handler(s), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 16384}
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 	go func() {

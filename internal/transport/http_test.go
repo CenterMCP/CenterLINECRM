@@ -19,7 +19,7 @@ func TestPublicWorkflow(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer s.Close()
-	h := Handler(s, strings.Repeat("a", 32))
+	h := Handler(s)
 	request := func(method, path, body, token, key string) *httptest.ResponseRecorder {
 		t.Helper()
 		r := httptest.NewRequest(method, path, bytes.NewBufferString(body))
@@ -33,7 +33,7 @@ func TestPublicWorkflow(t *testing.T) {
 		h.ServeHTTP(w, r)
 		return w
 	}
-	for _, path := range []string{"/mcp", "/api/v1/me", "/api/v1/me/points"} {
+	for _, path := range []string{"/api/v1/me", "/api/v1/me/points", "/api/v1/me/ledger", "/api/v1/me/redemptions"} {
 		w := request("GET", path, "", "", "")
 		if w.Code != 401 {
 			t.Fatalf("unprotected %s: %d", path, w.Code)
@@ -94,12 +94,11 @@ func TestMCPToolsAndResource(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer s.Close()
-	h := Handler(s, strings.Repeat("a", 32))
+	h := Handler(s)
 	session := ""
 	rpc := func(body string) map[string]any {
 		t.Helper()
 		r := httptest.NewRequest(http.MethodPost, "/mcp", strings.NewReader(body))
-		r.Header.Set("Authorization", "Bearer "+strings.Repeat("a", 32))
 		if session != "" {
 			r.Header.Set("Mcp-Session-Id", session)
 		}

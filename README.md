@@ -7,7 +7,6 @@ A SQLite loyalty CRM built from CenterCDP's Go, Streamable HTTP MCP, and embedde
 Requires Go 1.26+, CGO and a C compiler (SQLite uses `mattn/go-sqlite3`).
 
 ```sh
-export CRM_ADMIN_TOKEN="$(openssl rand -hex 32)"
 go build -o build/centerlinecrm ./cmd/server
 ./build/centerlinecrm --database ./data/centerlinecrm.db --address 127.0.0.1:8000
 ```
@@ -16,14 +15,13 @@ The database directory and version-1 schema are created automatically. The serve
 
 ## Connect an MCP client
 
-Use a client that supports Streamable HTTP and bearer headers. Configuration shape varies by client:
+Use a client that supports Streamable HTTP. The MCP endpoint does not require an authentication header. Configuration shape varies by client:
 
 ```json
 {
   "mcpServers": {
     "centerlinecrm": {
-      "url": "http://localhost:8000/mcp",
-      "headers": { "Authorization": "Bearer <CRM_ADMIN_TOKEN>" }
+      "url": "http://localhost:8000/mcp"
     }
   }
 }
@@ -33,7 +31,7 @@ Ask the LLM to open the CRM admin UI, create a Gold tier, add a coffee privilege
 
 `open_crm_admin` accepts an optional `section` (`master`, `privileges`, `customers`, `points`, or `redemptions`) and `customer_id`. For example, `{"section":"points","customer_id":"<id>"}` opens that customer’s point ledger. LLM tool results automatically select the matching tab, preserve filters, and populate editor fields. Tool arguments are validated on the server, including required fields and unknown properties.
 
-`open_crm_admin` exposes an embedded MCP App at `ui://centerlinecrm/admin/v1.html`. Compatible clients render tabs, editable forms, tables, and pagination. Every edit calls the same authenticated MCP tools. Clients without MCP Apps can use all tools directly.
+`open_crm_admin` exposes an embedded MCP App at `ui://centerlinecrm/admin/v1.html`. Compatible clients render tabs, editable forms, tables, and pagination. Every edit calls the same MCP tools. Clients without MCP Apps can use all tools directly.
 
 | Tool | Purpose |
 | --- | --- |
@@ -104,15 +102,15 @@ curl -X POST http://localhost:8000/api/v1/me/redemptions \
   -d '{"privilege_id":"coffee"}'
 ```
 
-Identical redemption retries return the original record (HTTP 200), even if stock is now exhausted. Reusing a key for a different privilege returns 409. Balance debit, stock decrement, redemption snapshot, and ledger entry commit together in one immediate SQLite transaction. Concurrent requests cannot overspend or claim the final stock twice. There is no public endpoint for awarding points; only trusted MCP administrators may do so.
+Identical redemption retries return the original record (HTTP 200), even if stock is now exhausted. Reusing a key for a different privilege returns 409. Balance debit, stock decrement, redemption snapshot, and ledger entry commit together in one immediate SQLite transaction. Concurrent requests cannot overspend or claim the final stock twice. There is no public endpoint for awarding points; point adjustments are exposed through MCP.
 
 Errors return `{"error":"..."}`: 400 invalid input, 401 unauthorized, 404 missing/unavailable privilege, 409 conflict/insufficient points, 500 internal error.
 
 ## Deployment and scope
 
-This is a single-business starter implementation. It provides token-based registration; LINE Login/LIFF, verified email, account recovery, expiring customer sessions, automated earning rules, point expiry, and privilege fulfillment are not integrated. Redemption records are receipts, not merchant-validated single-use vouchers. Deactivating a customer immediately blocks their token; changing `CRM_ADMIN_TOKEN` and restarting rotates administrator access.
+This is a single-business starter implementation. It provides token-based registration; LINE Login/LIFF, verified email, account recovery, expiring customer sessions, automated earning rules, point expiry, and privilege fulfillment are not integrated. Redemption records are receipts, not merchant-validated single-use vouchers. Deactivating a customer immediately blocks their token.
 
-For internet deployment, terminate TLS at a reverse proxy, apply registration and API rate limits, restrict allowed origins, and protect admin MCP separately. Do not embed the admin secret in customer applications. All admin-token holders have full CRM access. Customer tokens are long-lived credentials: store them securely. No cross-origin CORS access is enabled by default; serve a customer frontend through the same origin or configure a trusted proxy. Generic master data is not returned through public endpoints. Treat SQLite files as sensitive personal data.
+For internet deployment, terminate TLS at a reverse proxy, apply registration and API rate limits, restrict allowed origins, and protect admin MCP separately. The MCP endpoint has no built-in authentication: anyone who can reach `/mcp` can manage CRM data and points. Customer tokens are long-lived credentials: store them securely. No cross-origin CORS access is enabled by default; serve a customer frontend through the same origin or configure a trusted proxy. Generic master data is not returned through public endpoints. Treat SQLite files as sensitive personal data.
 
 ## Development
 
@@ -121,14 +119,14 @@ go test -race ./...
 go vet ./...
 ```
 
-Tests cover token isolation, schema validation before writes, ledger idempotency, rollback, persistence, concurrent redemption across independent SQLite connections, and the complete MCP-to-public-API workflow: create master data and privileges, register a customer, award points through MCP, redeem through the public API, inspect the ledger, and deactivate the customer. MCP tools also expose the embedded UI resource.
+Tests cover token isolation, schema validation before writes, ledger idempotency, rollback, persistence, concurrent redemption across independent SQLite connections, and the complete MCP-to-public-API workflow: create master data and privileges, register a customer, award points through MCP, redeem through the public API, inspect the ledger, and deactivate the customer. MCP tests run without Authorization headers and also verify the embedded UI resource.
 
 ## Docker
 
 ```sh
 docker build -t centerlinecrm .
 docker run --rm -p 127.0.0.1:8000:8000 \
-  -e CRM_ADMIN_TOKEN -v centerlinecrm-data:/data centerlinecrm
+  -v centerlinecrm-data:/data centerlinecrm
 ```
 
 ### Build and publish to Docker Hub
