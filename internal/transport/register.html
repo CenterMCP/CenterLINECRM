@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Become a member · CenterLINECRM</title>
+  <link rel="stylesheet" href="./register.css">
+  <script src="./register.js" defer></script>
+</head>
+<body>
+  <header><a class="brand" href="./register" aria-label="Membership home"><span class="brand-mark" aria-hidden="true">C</span> CenterLINECRM <span class="brand-label">MEMBERSHIP</span></a></header>
+  <main>
+    <section class="intro" aria-labelledby="intro-title">
+      <p class="eyebrow">A LITTLE MORE REWARDING</p>
+      <h1 id="intro-title">Your next visit.<br>A little more<br><span>special.</span></h1>
+      <p class="intro-copy">Join our membership and make every visit count. Keep your points and discover privileges, all in one place.</p>
+      <div class="sample-card" aria-hidden="true"><div class="card-top"><span>MEMBER CLUB</span><span>✦</span></div><div class="card-bottom"><span>Your membership<br><strong>More to look forward to.</strong></span><span>↗</span></div></div>
+      <ul class="benefits"><li><span aria-hidden="true">01</span> A membership that’s yours</li><li><span aria-hidden="true">02</span> Points for your next reward</li><li><span aria-hidden="true">03</span> Privileges to discover</li></ul>
+    </section>
+    <section class="panel" aria-labelledby="form-title">
+      <div id="registration">
+        <p class="eyebrow">WELCOME TO THE CLUB</p>
+        <h2 id="form-title">Become a member</h2>
+        <p class="muted">A few details and you’re on your way.</p>
+        <form id="register-form" action="../api/v1/register" method="post">
+          <label for="name">Full name</label>
+          <input id="name" name="name" autocomplete="name" placeholder="Your full name" maxlength="200" required>
+          <label for="email">Email address</label>
+          <input id="email" name="email" type="email" autocomplete="email" inputmode="email" placeholder="you@example.com" maxlength="254" required aria-describedby="email-help">
+          <p class="field-help" id="email-help">Use an email address that belongs to you.</p>
+          <div id="form-error" class="message error" role="alert" hidden></div>
+          <button id="submit" type="submit">Create my membership <span aria-hidden="true">↗</span></button>
+          <p class="fine-print">We’ll use your name and email to create your membership. Your account starts with 0 points.</p>
+        </form>
+        <noscript><p class="message error">Please enable JavaScript to register and securely save your membership access key.</p></noscript>
+        <div class="panel-note"><span aria-hidden="true">✧</span><p>Good things start here.<br><span class="muted">Keep your membership access key after signing up.</span></p></div>
+      </div>
+      <div id="confirmation" hidden>
+        <p class="eyebrow">YOU’RE IN</p>
+        <h2 id="success-title" tabindex="-1">Welcome to the club.</h2>
+        <p class="muted">Your membership is ready, <span id="member-name"></span>.</p>
+        <dl class="member-details"><div><dt>Email</dt><dd id="member-email"></dd></div><div><dt>Member ID</dt><dd id="member-id"></dd></div><div><dt>Available points</dt><dd id="member-points"></dd></div></dl>
+        <h3>Save your access key</h3>
+        <p class="muted">This key is shown only once. Save it before leaving or refreshing this page. It provides access to your membership; keep it private.</p>
+        <details><summary>Show access key</summary><code id="access-key"></code></details>
+        <button id="download" type="button">Download membership details <span aria-hidden="true">↓</span></button>
+        <button id="copy" class="secondary" type="button">Copy access key</button>
+        <p id="save-status" class="field-help" role="status" aria-live="polite"></p>
+        <p class="fine-print">Email verification and account recovery are currently unavailable. Your access key is not saved in this browser.</p>
+      </div>
+    </section>
+  </main>
+  <footer><span>CenterLINECRM · Member club</span><span>A little closer to your next reward.</span></footer>
+</body>
+</html>

@@ -17,6 +17,7 @@ func Handler(s *crm.Store) http.Handler {
 	mux := http.NewServeMux()
 	mcpHTTP := server.NewStreamableHTTPServer(MCP(s))
 	mux.Handle("/mcp", mcpHTTP)
+	registerCustomerUI(mux)
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
 		if err := s.DB.PingContext(r.Context()); err != nil {
 			write(w, 503, map[string]string{"status": "unavailable"})

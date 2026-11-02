@@ -43,7 +43,7 @@ func main() {
 			log.Printf("shutdown: %v", err)
 		}
 	}()
-	log.Printf("CenterLINECRM listening on %s (MCP /mcp, public API /api/v1)", *address)
+	log.Printf("CenterLINECRM listening on %s (MCP /mcp, registration /public/register, public API /api/v1)", *address)
 	if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		log.Fatal(err)
 	}

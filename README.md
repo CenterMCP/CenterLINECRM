@@ -66,6 +66,14 @@ Example tool arguments:
 
 Reuse the reference only with the same delta and reason. Each adjustment is limited to ±1,000,000,000 points. References beginning `redeem:` are reserved for the redemption ledger.
 
+## Public membership registration
+
+Open `http://localhost:8000/public/register` to register a customer by name and email. `/public` and `/public/` redirect to this page. The responsive public page is embedded in the Go binary and served by the same service as `/mcp`; no frontend build or separate hosting is required.
+
+For a dedicated MCP domain, share `https://your-mcp-domain/public/register`. If the MCP endpoint is `https://your-domain/<instance>/mcp`, share `https://your-domain/<instance>/public/register`. Relative asset and API URLs preserve the instance prefix when the proxy strips it. Forward `/public/*` and `/api/v1/*` to the same CRM service alongside `/mcp`.
+
+Registration shows the member ID, email, initial points, and a one-time access key with copy and download controls. The key stays only in page memory, with no browser storage or cookies. Customers must save it before closing or refreshing the page; email verification and account recovery are not available. Duplicate registrations display an explanation without exposing an existing key. The downloaded text file contains the key and must be kept private.
+
 ## Public API
 
 | Method | Endpoint | Authorization |
