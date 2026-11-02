@@ -1,1 +1,128 @@
-*{box-sizing:border-box}body{margin:0;background:#f6f7f3;color:#172b25;font-family:Arial,Helvetica,sans-serif;-webkit-font-smoothing:antialiased}header,main,footer{max-width:1120px;margin:auto}header{padding:34px 32px}.brand{display:flex;align-items:center;gap:10px;color:inherit;text-decoration:none;font-size:17px;font-weight:700}.brand-mark{display:grid;place-items:center;width:30px;height:30px;border-radius:9px;background:#245d48;color:white}.brand-label{margin-left:auto;color:#66736c;font-size:10px;letter-spacing:2px;font-weight:400}main{display:grid;grid-template-columns:1fr 1fr;gap:86px;align-items:start;padding:50px 32px 70px}.eyebrow{font-size:10px;font-weight:700;letter-spacing:2px;color:#527563;margin:0 0 22px}h1{font-size:64px;letter-spacing:-3px;line-height:1.06;font-weight:500;margin:0 0 24px}h1 span{color:#438469}p{line-height:1.65}.intro-copy{max-width:340px;color:#68736d;font-size:15px}.sample-card{margin:32px 0 28px;max-width:330px;aspect-ratio:1.8;border-radius:15px;padding:24px;background:linear-gradient(120deg,#193f33,#3e7459);color:#e2ebcf;box-shadow:0 15px 30px #1e493219;transform:rotate(-4deg)}.card-top,.card-bottom{display:flex;justify-content:space-between}.card-top{font-size:10px;letter-spacing:2px}.card-top span:last-child{font-size:24px;line-height:16px}.card-bottom{margin-top:64px;font-size:11px;line-height:1.8;color:#bcd2bc}.card-bottom strong{font-size:15px;color:#f5f5dd;font-weight:400}.card-bottom>span:last-child{font-size:24px}.benefits{list-style:none;padding:0;margin:36px 0 0;font-size:13px;color:#53655a}.benefits li{margin:16px 0;display:flex;gap:16px;align-items:center}.benefits li span{font-size:10px;color:#6b8772;border:1px solid #d8e0d5;border-radius:50%;padding:6px}.panel{background:#fff;border:1px solid #e4e8df;border-radius:20px;padding:38px 36px;box-shadow:0 12px 45px #23483306}.panel .eyebrow{margin-bottom:13px}h2{font-size:29px;letter-spacing:-1px;line-height:1.2;margin:0 0 12px;font-weight:500}.muted{color:#727a73;font-size:14px}.panel>div>.muted{margin-bottom:30px}form{margin-top:30px}label{display:block;font-size:12px;font-weight:600;margin:22px 0 9px}input{display:block;width:100%;border:1px solid #dce2da;border-radius:8px;padding:14px;font:inherit;font-size:16px;background:#fcfdfb;color:#172b25}input::placeholder{color:#a0a69f;font-size:14px}input:focus-visible,button:focus-visible,a:focus-visible,summary:focus-visible{outline:3px solid #92bfa6;outline-offset:3px}.field-help{font-size:11px;color:#7b847c;margin:8px 0 0}button{display:flex;align-items:center;justify-content:space-between;width:100%;margin-top:28px;padding:15px 18px;background:#245d48;border:1px solid #245d48;border-radius:8px;color:white;font:inherit;font-size:13px;font-weight:600;cursor:pointer;min-height:48px}button:hover{background:#194b38}button:disabled{opacity:.65;cursor:wait}.fine-print{font-size:11px;color:#7d857e;margin:15px 0 0}.panel-note{display:flex;gap:15px;border-top:1px solid #edf0e9;margin-top:30px;padding-top:24px;align-items:center}.panel-note>span{display:grid;place-items:center;border-radius:10px;width:38px;height:38px;background:#f2f5ed;font-size:24px;color:#71886a}.panel-note p{font-size:12px;margin:0}.panel-note .muted{font-size:11px}.message{font-size:13px;padding:12px;border-radius:8px;margin-top:18px}.error{color:#963c2e;background:#fff2ed}.member-details{margin:26px 0;padding:18px;background:#f6f8f2;border-radius:10px}.member-details div+div{margin-top:17px}dt{font-size:11px;color:#6e7c70}dd{font-size:14px;margin:5px 0 0;overflow-wrap:anywhere}#member-points{font-size:28px;color:#245d48}h3{font-size:16px;margin-top:28px}details{font-size:12px;margin-top:20px}summary{cursor:pointer;padding:8px 0}code{display:block;overflow-wrap:anywhere;padding:14px;background:#f6f8f2;line-height:1.6}.secondary{background:white;color:#245d48;margin-top:10px;justify-content:center}.secondary:hover{background:#f6f8f2}footer{padding:24px 32px;border-top:1px solid #e0e6db;display:flex;justify-content:space-between;gap:20px;font-size:10px;color:#899084}[hidden]{display:none!important}@media(max-width:800px){main{gap:36px;padding-top:25px}h1{font-size:50px}.panel{padding:28px 24px}.sample-card{padding:20px}.card-bottom{margin-top:45px}}@media(max-width:600px){header{padding:24px}.brand{font-size:15px}.brand-label{font-size:8px}main{grid-template-columns:1fr;padding:22px 24px 40px;gap:28px}.intro h1{font-size:46px;letter-spacing:-2px}.intro h1 br{display:none}.intro-copy{max-width:100%;font-size:14px}.sample-card,.benefits{display:none}.intro .eyebrow{margin-bottom:15px}.panel{padding:28px 24px;border-radius:16px}h2{font-size:27px}footer{padding:22px 24px;flex-direction:column;gap:8px}}
+:root {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #1e3557;
+  background: #e3e9f1;
+  font-synthesis: none;
+  -webkit-font-smoothing: antialiased;
+}
+* { box-sizing: border-box; }
+body { margin: 0; }
+a { color: inherit; }
+button, input { font: inherit; }
+button, a, summary { -webkit-tap-highlight-color: transparent; }
+button { cursor: pointer; }
+button:disabled { cursor: default; opacity: .55; }
+button:focus-visible, input:focus-visible, a:focus-visible, summary:focus-visible { outline: 3px solid #859ec0; outline-offset: 3px; }
+[hidden] { display: none !important; }
+.loyalty-app { max-width: 480px; margin: 28px auto; min-height: calc(100dvh - 56px); background: #f5f7fa; border: 1px solid #d5dde9; border-radius: 28px; overflow: hidden; box-shadow: 0 18px 70px #1f2b3d10; }
+.app-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 25px 24px; }
+.brand { display: flex; gap: 9px; align-items: center; text-decoration: none; font-size: 14px; font-weight: 750; letter-spacing: -.4px; }
+.brand-mark { display: grid; place-items: center; width: 32px; height: 32px; color: #d6e2f4; background: #2563eb; border-radius: 11px; font-size: 20px; }
+.brand small { display: block; font-size: 7px; font-weight: 500; letter-spacing: 1.3px; margin-top: 4px; color: #5b7caa; }
+.club-badge { font-size: 8px; letter-spacing: 1px; white-space: nowrap; color: #466289; }
+.club-badge span { color: #506f9b; padding-left: 4px; }
+.welcome { padding: 18px 24px 34px; text-align: center; background: radial-gradient(ellipse at 50% 40%, #dae2ed 0, #f5f7fa 70%); }
+.welcome-icon { display: grid; place-items: center; margin: 0 auto 20px; width: 62px; height: 62px; background: #dae2ed; border: 1px solid #c8d4e4; border-radius: 22px; font-size: 36px; color: #415a7e; transform: rotate(-8deg); }
+.eyebrow { font-size: 8px; letter-spacing: 1.8px; font-weight: 700; color: #4f6e99; margin: 0 0 12px; }
+h1 { font-size: 34px; line-height: 1.15; letter-spacing: -1.4px; font-weight: 650; margin: 0; overflow-wrap: anywhere; }
+.welcome > p:not(.eyebrow) { color: #5576a4; font-size: 13px; line-height: 1.7; margin: 16px 0 22px; }
+.benefits { display: flex; justify-content: center; gap: 15px; font-size: 10px; color: #47638a; }
+.signup-card { margin: 0 20px; padding: 24px; border: 1px solid #d9e0eb; background: #fff; border-radius: 22px; }
+.section-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+h2 { font-size: 21px; letter-spacing: -.7px; font-weight: 650; margin: 0; }
+.step-label { font-size: 8px; letter-spacing: 1px; color: #5a7baa; white-space: nowrap; }
+.muted { color: #5576a5; font-size: 12px; line-height: 1.65; }
+.signup-card > .muted { margin: 9px 0 26px; }
+label { display: block; font-size: 11px; font-weight: 600; margin: 20px 0 8px; }
+input { width: 100%; min-height: 50px; border: 1px solid #d5dde9; border-radius: 12px; padding: 13px; background: #f9fafc; color: #1e3557; font-size: 16px; }
+input::placeholder { color: #849dbf; font-size: 12px; }
+.field-help, .fine-print { font-size: 10px; color: #597baa; line-height: 1.65; }
+.field-help { margin: 7px 0 0; }
+.fine-print { margin: 14px 0 0; }
+.primary, .secondary, .redeem-button { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 46px; border-radius: 12px; border: 1px solid #2563eb; background: #2563eb; color: #fff; font-size: 12px; font-weight: 600; padding: 13px 16px; }
+.primary { margin-top: 24px; }
+.primary:hover:not(:disabled), .redeem-button:hover:not(:disabled) { background: #1d4ed8; }
+.secondary { justify-content: center; background: transparent; color: #31445e; border-color: #cad4e3; margin-top: 12px; }
+.secondary:hover:not(:disabled) { background: #e5eaf1; }
+.welcome-footnote { text-align: center; font-size: 10px; color: #5f80ad; padding: 12px 16px; }
+.welcome-footnote span { margin-left: 6px; }
+#confirmation { padding: 12px 24px 0; }
+.member-greeting { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+.member-greeting .eyebrow { font-size: 7px; margin-bottom: 8px; }
+.member-greeting h1 { font-size: 27px; }
+.member-greeting h1 > span:last-child { color: #5373a1; }
+.member-avatar { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 50%; background: #dee5ee; flex-shrink: 0; font-size: 18px; }
+.greeting-copy { font-size: 11px; color: #6181ad; margin: 10px 0 23px; }
+.wallet { padding: 23px; border-radius: 23px; color: #d6e1f0; background: radial-gradient(ellipse at 110% 115%, #3b82f6 0, transparent 65%), #173f85; box-shadow: 0 10px 22px #23314419; }
+.wallet-top, .wallet-bottom { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.wallet-top { font-size: 8px; letter-spacing: 1.5px; }
+.active-badge { font-size: 7px; letter-spacing: 1px; padding: 6px 9px; border: 1px solid #819abe45; border-radius: 20px; background: #9cb0cc12; }
+.points-label { font-size: 11px; color: #a9bbd3; margin: 26px 0 4px; }
+.points { margin: 0; font-size: 48px; letter-spacing: -2px; line-height: 1.2; overflow-wrap: anywhere; }
+.points > span:last-child { font-size: 14px; letter-spacing: 0; margin-left: 8px; color: #abbcd3; }
+.wallet-bottom { font-size: 9px; color: #abbcd3; margin-top: 20px; }
+.wallet-bottom > span:last-child { font-size: 27px; }
+.rewards { padding-top: 32px; }
+.rewards .eyebrow { font-size: 7px; margin-bottom: 8px; }
+.rewards h2 { font-size: 21px; }
+.rewards > .muted { font-size: 11px; margin: 10px 0 20px; }
+.icon-button { border: 1px solid #cfd9e7; border-radius: 50%; width: 40px; height: 40px; background: transparent; color: #3a5171; font-size: 24px; flex-shrink: 0; }
+.coupon-list { display: grid; gap: 16px; }
+.coupon { display: grid; grid-template-columns: 84px minmax(0, 1fr); border: 1px solid #d3dce9; border-radius: 18px; background: #fff; overflow: hidden; }
+.coupon-art { background: #dce4f0; border-right: 1px dashed #b6c5da; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; gap: 14px; }
+.coupon:nth-child(3n + 2) .coupon-art { background: #e7f0ff; color: #4267a5; }
+.coupon:nth-child(3n) .coupon-art { background: #e3e9f1; color: #456086; }
+.coupon-art::before, .coupon-art::after { content: ''; position: absolute; right: -9px; width: 16px; height: 16px; border-radius: 50%; background: #f5f7fa; border: 1px solid #d3dce9; }
+.coupon-art::before { top: -9px; }
+.coupon-art::after { bottom: -9px; }
+.coupon-art > span { font-size: 35px; font-weight: 300; }
+.coupon-art small { font-size: 7px; text-align: center; line-height: 1.7; letter-spacing: 1.2px; }
+.coupon-body { padding: 18px 16px; min-width: 0; }
+.coupon-label { font-size: 6px; letter-spacing: 1.1px; color: #6383af; margin: 0 0 8px; }
+.coupon-name { font-size: 17px; letter-spacing: -.3px; margin: 0 0 6px; overflow-wrap: anywhere; }
+.coupon-description { font-size: 10px; line-height: 1.6; color: #597baa; margin: 0 0 13px; white-space: pre-line; overflow-wrap: anywhere; }
+.coupon-meta { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; margin-bottom: 13px; }
+.coupon-cost { font-size: 13px; color: #334762; }
+.coupon-stock { font-size: 8px; color: #6d8bb4; }
+.redeem-button { font-size: 10px; min-height: 44px; border-radius: 9px; padding: 11px 12px; }
+.redeem-button:disabled { background: #e5eaf1; border-color: #d4dde9; color: #51709c; opacity: 1; }
+.coupon-help { font-size: 9px; color: #6584af; line-height: 1.5; margin: 8px 0 0; }
+.coupon-help:empty { display: none; }
+.empty-state { text-align: center; border: 1px dashed #c9d4e3; border-radius: 18px; padding: 28px 22px; color: #5c7dab; font-size: 12px; line-height: 1.7; }
+.empty-state > span { font-size: 35px; }
+.empty-state h3 { font-size: 16px; color: #344966; }
+.message { padding: 14px; font-size: 12px; line-height: 1.6; border-radius: 12px; background: #dfe6f0; color: #2e4059; margin-bottom: 16px; overflow-wrap: anywhere; }
+.error { background: #fff0e8; color: #984d34; }
+#form-error { margin: 16px 0 0; }
+.account-details { border: 1px solid #d3dce8; padding: 17px; margin-top: 28px; border-radius: 16px; background: #eef2f7; scroll-margin-top: 20px; }
+summary { cursor: pointer; font-size: 12px; font-weight: 600; line-height: 1.6; }
+.account-details > summary { display: flex; justify-content: space-between; gap: 12px; }
+.account-details dl { font-size: 12px; margin-top: 22px; }
+.account-details dl > div + div { margin-top: 16px; }
+dt { color: #587aa9; font-size: 10px; }
+dd { margin: 5px 0 0; overflow-wrap: anywhere; }
+.account-details h3 { margin-top: 24px; font-size: 15px; }
+.key-details { margin: 18px 0; }
+code { display: block; overflow-wrap: anywhere; font-size: 12px; line-height: 1.6; background: #dde4ee; padding: 14px; margin-top: 12px; border-radius: 8px; }
+.key-reminder { font-size: 10px; color: #5b7caa; line-height: 1.8; padding: 5px 5px 12px; }
+.key-reminder a { display: block; color: #384e6c; }
+footer { display: flex; flex-direction: column; align-items: center; gap: 9px; padding: 24px 16px 28px; color: #6785b0; font-size: 10px; }
+.footer-mark { font-size: 22px; color: #5577a6; }
+footer small { font-size: 6px; letter-spacing: 1.8px; margin-top: 5px; }
+@media (max-width: 520px) {
+  :root { background: #f5f7fa; }
+  .loyalty-app { margin: 0 auto; min-height: 100dvh; border: 0; border-radius: 0; box-shadow: none; }
+  .app-header { padding-top: max(24px, env(safe-area-inset-top)); }
+  footer { padding-bottom: max(28px, env(safe-area-inset-bottom)); }
+}
+@media (max-width: 360px) {
+  .app-header { padding-left: 18px; padding-right: 18px; }
+  .club-badge { font-size: 6px; }
+  .welcome { padding-left: 18px; padding-right: 18px; }
+  h1 { font-size: 30px; }
+  .benefits { gap: 10px; font-size: 9px; }
+  .signup-card { margin: 0 14px; padding: 20px; }
+  #confirmation { padding-left: 18px; padding-right: 18px; }
+  .coupon { grid-template-columns: 64px minmax(0, 1fr); }
+  .coupon-body { padding: 16px 12px; }
+}

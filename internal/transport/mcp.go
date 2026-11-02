@@ -33,6 +33,7 @@ type input struct {
 
 func MCP(s *crm.Store) *server.MCPServer {
 	ms := server.NewMCPServer("CenterLINECRM", Version, server.WithResourceCapabilities(false, false), server.WithInputSchemaValidation())
+	registerPublicURLTool(ms)
 	resource := mcp.NewResource(ResourceURI, "centerlinecrm-admin", mcp.WithResourceTitle("CenterLINECRM master data"), mcp.WithMIMEType("text/html;profile=mcp-app"))
 	ms.AddResource(resource, func(context.Context, mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
 		return []mcp.ResourceContents{mcp.TextResourceContents{URI: ResourceURI, MIMEType: "text/html;profile=mcp-app", Text: adminHTML}}, nil

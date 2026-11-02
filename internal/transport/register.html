@@ -4,53 +4,83 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light">
-  <title>Become a member · CenterLINECRM</title>
+  <title>Join the club · CenterLINECRM</title>
   <link rel="stylesheet" href="./register.css">
   <script src="./register.js" defer></script>
 </head>
 <body>
-  <header><a class="brand" href="./register" aria-label="Membership home"><span class="brand-mark" aria-hidden="true">C</span> CenterLINECRM <span class="brand-label">MEMBERSHIP</span></a></header>
-  <main>
-    <section class="intro" aria-labelledby="intro-title">
-      <p class="eyebrow">A LITTLE MORE REWARDING</p>
-      <h1 id="intro-title">Your next visit.<br>A little more<br><span>special.</span></h1>
-      <p class="intro-copy">Join our membership and make every visit count. Keep your points and discover privileges, all in one place.</p>
-      <div class="sample-card" aria-hidden="true"><div class="card-top"><span>MEMBER CLUB</span><span>✦</span></div><div class="card-bottom"><span>Your membership<br><strong>More to look forward to.</strong></span><span>↗</span></div></div>
-      <ul class="benefits"><li><span aria-hidden="true">01</span> A membership that’s yours</li><li><span aria-hidden="true">02</span> Points for your next reward</li><li><span aria-hidden="true">03</span> Privileges to discover</li></ul>
-    </section>
-    <section class="panel" aria-labelledby="form-title">
-      <div id="registration">
-        <p class="eyebrow">WELCOME TO THE CLUB</p>
-        <h2 id="form-title">Become a member</h2>
-        <p class="muted">A few details and you’re on your way.</p>
-        <form id="register-form" action="../api/v1/register" method="post">
-          <label for="name">Full name</label>
-          <input id="name" name="name" autocomplete="name" placeholder="Your full name" maxlength="200" required>
-          <label for="email">Email address</label>
-          <input id="email" name="email" type="email" autocomplete="email" inputmode="email" placeholder="you@example.com" maxlength="254" required aria-describedby="email-help">
-          <p class="field-help" id="email-help">Use an email address that belongs to you.</p>
-          <div id="form-error" class="message error" role="alert" hidden></div>
-          <button id="submit" type="submit">Create my membership <span aria-hidden="true">↗</span></button>
-          <p class="fine-print">We’ll use your name and email to create your membership. Your account starts with 0 points.</p>
-        </form>
-        <noscript><p class="message error">Please enable JavaScript to register and securely save your membership access key.</p></noscript>
-        <div class="panel-note"><span aria-hidden="true">✧</span><p>Good things start here.<br><span class="muted">Keep your membership access key after signing up.</span></p></div>
-      </div>
-      <div id="confirmation" hidden>
-        <p class="eyebrow">YOU’RE IN</p>
-        <h2 id="success-title" tabindex="-1">Welcome to the club.</h2>
-        <p class="muted">Your membership is ready, <span id="member-name"></span>.</p>
-        <dl class="member-details"><div><dt>Email</dt><dd id="member-email"></dd></div><div><dt>Member ID</dt><dd id="member-id"></dd></div><div><dt>Available points</dt><dd id="member-points"></dd></div></dl>
-        <h3>Save your access key</h3>
-        <p class="muted">This key is shown only once. Save it before leaving or refreshing this page. It provides access to your membership; keep it private.</p>
-        <details><summary>Show access key</summary><code id="access-key"></code></details>
-        <button id="download" type="button">Download membership details <span aria-hidden="true">↓</span></button>
-        <button id="copy" class="secondary" type="button">Copy access key</button>
-        <p id="save-status" class="field-help" role="status" aria-live="polite"></p>
-        <p class="fine-print">Email verification and account recovery are currently unavailable. Your access key is not saved in this browser.</p>
-      </div>
-    </section>
-  </main>
-  <footer><span>CenterLINECRM · Member club</span><span>A little closer to your next reward.</span></footer>
+  <div class="loyalty-app">
+    <header class="app-header">
+      <a class="brand" href="./register" aria-label="Membership home"><span class="brand-mark" aria-hidden="true">C</span><span>CenterLINECRM<small>YOUR EVERYDAY REWARDS</small></span></a>
+      <span class="club-badge">MEMBER CLUB <span aria-hidden="true">✦</span></span>
+    </header>
+    <main>
+      <section id="registration" aria-labelledby="form-title">
+        <div class="welcome">
+          <span class="welcome-icon" aria-hidden="true">✦</span>
+          <p class="eyebrow">LITTLE VISITS. LOVELY REWARDS.</p>
+          <h1 id="form-title">Your new favorite<br>way to be rewarded.</h1>
+          <p>Join the club. Collect points.<br>Find a little something just for you.</p>
+          <div class="benefits"><span>✧ Earn points</span><span>▧ Unlock coupons</span><span>♡ Enjoy more</span></div>
+        </div>
+        <div class="signup-card">
+          <div class="section-heading"><h2>Let’s make it yours</h2><span class="step-label">01 / JOIN</span></div>
+          <p class="muted">A few details. A whole lot to look forward to.</p>
+          <form id="register-form" action="../api/v1/register" method="post">
+            <label for="name">Full name</label>
+            <input id="name" name="name" autocomplete="name" placeholder="What should we call you?" maxlength="200" required>
+            <label for="email">Email address</label>
+            <input id="email" name="email" type="email" autocomplete="email" inputmode="email" placeholder="you@example.com" maxlength="254" required aria-describedby="email-help">
+            <p class="field-help" id="email-help">Use an email address that belongs to you.</p>
+            <div id="form-error" class="message error" role="alert" hidden></div>
+            <button id="submit" class="primary" type="submit">Join the member club <span aria-hidden="true">↗</span></button>
+            <p class="fine-print">We’ll use your name and email to create your membership. Start with 0 points and earn toward your first coupon.</p>
+          </form>
+          <noscript><p class="message error">Please enable JavaScript to register and save your membership access key.</p></noscript>
+        </div>
+        <p class="welcome-footnote">A little closer to your next reward. <span aria-hidden="true">♡</span></p>
+      </section>
+      <section id="confirmation" aria-labelledby="success-title" hidden>
+        <div class="member-greeting"><div><p class="eyebrow">WELCOME TO THE CLUB</p><h1 id="success-title" tabindex="-1">Hi, <span id="member-name"></span> <span aria-hidden="true">✧</span></h1></div><span class="member-avatar" aria-hidden="true">C</span></div>
+        <p class="greeting-copy">Your membership is ready. Your next reward awaits.</p>
+        <section class="wallet" aria-label="Membership points">
+          <div class="wallet-top"><span>YOUR MEMBER CARD</span><span class="active-badge">● ACTIVE</span></div>
+          <p class="points-label">Available points</p>
+          <p class="points"><span id="member-points">0</span><span>pts</span></p>
+          <div class="wallet-bottom"><span>Every point brings you closer.</span><span aria-hidden="true">✦</span></div>
+        </section>
+        <section class="rewards" aria-labelledby="rewards-title">
+          <div class="section-heading"><div><p class="eyebrow">A LITTLE TREAT FOR YOU</p><h2 id="rewards-title">Your coupon collection</h2></div><button id="refresh-rewards" class="icon-button" type="button" aria-label="Refresh points and coupons">↻</button></div>
+          <p class="muted">Pick a favorite. Use your points. Make it yours.</p>
+          <div id="redemption-status" class="message" role="status" aria-live="polite" hidden></div>
+          <div id="rewards-error" class="message error" role="alert" hidden></div>
+          <p id="rewards-loading" class="empty-state" role="status" hidden>Finding your next reward…</p>
+          <div id="coupon-list" class="coupon-list" aria-live="polite"></div>
+          <div id="rewards-empty" class="empty-state" hidden><span aria-hidden="true">▧</span><h3>Good things are on their way</h3><p>There are no coupons available yet. Check back soon for your next treat.</p></div>
+          <button id="load-more" class="secondary" type="button" hidden>Show more coupons</button>
+          <p class="fine-print">Redeeming a coupon spends the points shown. Availability may change.</p>
+        </section>
+        <details id="membership-key" class="account-details">
+          <summary>Your membership &amp; access key <span aria-hidden="true">⌄</span></summary>
+          <dl><div><dt>Email</dt><dd id="member-email"></dd></div><div><dt>Member ID</dt><dd id="member-id"></dd></div></dl>
+          <h3>Keep your membership close</h3>
+          <p class="muted">Save your access key before leaving or refreshing this page. It gives access to your membership, so keep it private.</p>
+          <details class="key-details"><summary>Show access key</summary><code id="access-key"></code></details>
+          <button id="download" class="primary" type="button">Download membership details <span aria-hidden="true">↓</span></button>
+          <button id="copy" class="secondary" type="button">Copy access key</button>
+          <p id="save-status" class="field-help" role="status" aria-live="polite"></p>
+          <p class="fine-print">Your access key is not saved in this browser. Email verification and account recovery are currently unavailable.</p>
+        </details>
+        <p class="key-reminder">Keep your access key before you go. <a href="#membership-key">Save membership details ↓</a></p>
+      </section>
+    </main>
+    <footer><span class="footer-mark" aria-hidden="true">✦</span><span>A little more rewarding, every day.</span><small>POWERED BY CENTERLINECRM</small></footer>
+  </div>
+  <template id="coupon-template">
+    <article class="coupon">
+      <div class="coupon-art" aria-hidden="true"><span>✦</span><small>MEMBER<br>EXCLUSIVE</small></div>
+      <div class="coupon-body"><p class="coupon-label">A LITTLE SOMETHING SPECIAL</p><h3 class="coupon-name"></h3><p class="coupon-description"></p><div class="coupon-meta"><strong class="coupon-cost"></strong><span class="coupon-stock"></span></div><button class="redeem-button" type="button">Redeem coupon <span aria-hidden="true">↗</span></button><p class="coupon-help"></p></div>
+    </article>
+  </template>
 </body>
 </html>

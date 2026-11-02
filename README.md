@@ -36,6 +36,7 @@ Ask the LLM to open the CRM admin UI, create a Gold tier, add a coffee privilege
 | Tool | Purpose |
 | --- | --- |
 | `open_crm_admin` | Open the admin editor |
+| `get_public_urls` | Get the public membership registration URL |
 | `save_master_record` | Create/update/archive arbitrary master records |
 | `list_master_records` | List master records, optionally by kind |
 | `save_privilege` | Create/update/archive a redeemable privilege |
@@ -70,9 +71,13 @@ Reuse the reference only with the same delta and reason. Each adjustment is limi
 
 Open `http://localhost:8000/public/register` to register a customer by name and email. `/public` and `/public/` redirect to this page. The responsive public page is embedded in the Go binary and served by the same service as `/mcp`; no frontend build or separate hosting is required.
 
+When asked for a public URL, MCP clients can call `get_public_urls` with `{}`. Set `CRM_BASE_URL` to the externally accessible service base, including any instance prefix, for example `https://centermcp.com/instance-123` or `https://members.example.com`. The tool appends `/public/register`; trailing slashes are removed. Use an HTTP or HTTPS URL without credentials, query strings, or fragments, and omit `/mcp` and `/public/register` from the base. With `CRM_BASE_URL` unset or blank, the result is `https://centermcp.com/<mcp-id>/public/register` with `is_template: true`; replace `<mcp-id>` before sharing. With a configured base, `is_template` is false. Invalid configuration returns a tool error.
+
 For a dedicated MCP domain, share `https://your-mcp-domain/public/register`. If the MCP endpoint is `https://your-domain/<instance>/mcp`, share `https://your-domain/<instance>/public/register`. Relative asset and API URLs preserve the instance prefix when the proxy strips it. Forward `/public/*` and `/api/v1/*` to the same CRM service alongside `/mcp`.
 
 Registration shows the member ID, email, initial points, and a one-time access key with copy and download controls. The key stays only in page memory, with no browser storage or cookies. Customers must save it before closing or refreshing the page; email verification and account recovery are not available. Duplicate registrations display an explanation without exposing an existing key. The downloaded text file contains the key and must be kept private.
+
+After signup, the mobile loyalty interface shows the member's points card and active privileges as coupons. Each coupon includes its description, point cost, stock, and a redeem button. Insufficient points or exhausted stock disable redemption. Customers can refresh points and coupons and load further pages. Redemption uses the customer bearer token and an idempotency key, displays the receipt, and refreshes balance and availability. Unconfirmed attempts retain the same key for safe retries while the page remains open. Membership details and access-key saving controls are available below the coupon collection.
 
 ## Public API
 
@@ -125,6 +130,7 @@ For internet deployment, terminate TLS at a reverse proxy, apply registration an
 ```sh
 go test -race ./...
 go vet ./...
+node --test tests/customer-ui.test.cjs
 ```
 
 Tests cover token isolation, schema validation before writes, ledger idempotency, rollback, persistence, concurrent redemption across independent SQLite connections, and the complete MCP-to-public-API workflow: create master data and privileges, register a customer, award points through MCP, redeem through the public API, inspect the ledger, and deactivate the customer. MCP tests run without Authorization headers and also verify the embedded UI resource.
