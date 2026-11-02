@@ -18,7 +18,7 @@ import (
 
 func main() {
 	database := flag.String("database", "./data/centerlinecrm.db", "SQLite database path")
-	address := flag.String("address", "127.0.0.1:3100", "HTTP listen address")
+	address := flag.String("address", "127.0.0.1:8000", "HTTP listen address")
 	flag.Parse()
 	token := os.Getenv("CRM_ADMIN_TOKEN")
 	if len(token) < 32 {

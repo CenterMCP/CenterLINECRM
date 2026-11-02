@@ -11,6 +11,6 @@ RUN apk add --no-cache ca-certificates && addgroup -S crm && adduser -S crm -G c
 COPY --from=builder /centerlinecrm /usr/local/bin/centerlinecrm
 USER crm
 VOLUME ["/data"]
-EXPOSE 3100
+EXPOSE 8000
 ENTRYPOINT ["centerlinecrm"]
-CMD ["--database", "/data/centerlinecrm.db", "--address", "0.0.0.0:3100"]
+CMD ["--database", "/data/centerlinecrm.db", "--address", "0.0.0.0:8000"]

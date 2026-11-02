@@ -9,10 +9,10 @@ Requires Go 1.26+, CGO and a C compiler (SQLite uses `mattn/go-sqlite3`).
 ```sh
 export CRM_ADMIN_TOKEN="$(openssl rand -hex 32)"
 go build -o build/centerlinecrm ./cmd/server
-./build/centerlinecrm --database ./data/centerlinecrm.db --address 127.0.0.1:3100
+./build/centerlinecrm --database ./data/centerlinecrm.db --address 127.0.0.1:8000
 ```
 
-The database directory and version-1 schema are created automatically. The server defaults to localhost, port 3100. Keep the database, `-wal` and `-shm` files together; use SQLite's online backup API or stop the server before copying the database. Existing databases are preserved on startup.
+The database directory and version-1 schema are created automatically. The server defaults to localhost, port 8000. Keep the database, `-wal` and `-shm` files together; use SQLite's online backup API or stop the server before copying the database. Existing databases are preserved on startup.
 
 ## Connect an MCP client
 
@@ -22,7 +22,7 @@ Use a client that supports Streamable HTTP and bearer headers. Configuration sha
 {
   "mcpServers": {
     "centerlinecrm": {
-      "url": "http://localhost:3100/mcp",
+      "url": "http://localhost:8000/mcp",
       "headers": { "Authorization": "Bearer <CRM_ADMIN_TOKEN>" }
     }
   }
@@ -84,7 +84,7 @@ Reuse the reference only with the same delta and reason. Each adjustment is limi
 Register:
 
 ```sh
-curl -X POST http://localhost:3100/api/v1/register \
+curl -X POST http://localhost:8000/api/v1/register \
   -H 'Content-Type: application/json' \
   -d '{"name":"Alice","email":"alice@example.com"}'
 ```
@@ -94,10 +94,10 @@ Save `access_token` securely from the response. It is returned only during regis
 View points and redeem:
 
 ```sh
-curl http://localhost:3100/api/v1/me/points \
+curl http://localhost:8000/api/v1/me/points \
   -H "Authorization: Bearer $CUSTOMER_TOKEN"
 
-curl -X POST http://localhost:3100/api/v1/me/redemptions \
+curl -X POST http://localhost:8000/api/v1/me/redemptions \
   -H "Authorization: Bearer $CUSTOMER_TOKEN" \
   -H 'Content-Type: application/json' \
   -H 'Idempotency-Key: checkout-unique-123' \
@@ -127,7 +127,7 @@ Tests cover token isolation, schema validation before writes, ledger idempotency
 
 ```sh
 docker build -t centerlinecrm .
-docker run --rm -p 127.0.0.1:3100:3100 \
+docker run --rm -p 127.0.0.1:8000:8000 \
   -e CRM_ADMIN_TOKEN -v centerlinecrm-data:/data centerlinecrm
 ```
 
